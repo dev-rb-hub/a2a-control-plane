@@ -159,8 +159,8 @@ token      = 1*( ALPHA / DIGIT / "-" / "_" )
 | `a2a.zone.<zone_id>.agent.<agent_id>.tasks` | Aggregator to Worker | Task dispatch to one Worker. |
 | `a2a.zone.<zone_id>.agent.<agent_id>.state` | Worker to Aggregator | State deltas and heartbeats. |
 | `a2a.zone.<zone_id>.agent.<agent_id>.results` | Worker to Aggregator | Task results. |
-| `a2a.zone.<zone_id>.agent.<agent_id>.control` | Aggregator to Worker | Control commands (drain, shutdown). |
-| `a2a.zone.<zone_id>.aggregator.state` | Aggregator to CCR | Coalesced zone state. |
+| `a2a.zone.<zone_id>.agent.<agent_id>.control` | Aggregator to Worker | `ControlMessage`: task cancellation and heartbeat configuration ([03-protocols](03-protocols.md) Section 8). |
+| `a2a.zone.<zone_id>.aggregator.state` | Aggregator to CCR | `ZoneStateReport`: coalesced deltas and lifecycle changes ([03-protocols](03-protocols.md) Section 9). |
 
 ### 6.3 Wildcard Subscription Rules
 

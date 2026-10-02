@@ -71,13 +71,14 @@ class DevCluster:
         *,
         grace_period: float = 120.0,
         coalesce_window: float = 1.0,
+        max_attempts: int = 3,
     ) -> None:
         self.trust_domain = trust_domain
         self.clock = ManualClock()
         self.ca = DevCA()
         self.bus = InMemoryBus()
         self.registry = Registry(
-            SpiffeId.registry(trust_domain), self.ca.public_key_for, self.clock
+            SpiffeId.registry(trust_domain), self.ca.public_key_for, self.clock, bus=self.bus
         )
         self.aggregators = {
             zone: Aggregator(
@@ -88,6 +89,7 @@ class DevCluster:
                 heartbeat_factory=AdaptiveHeartbeat,
                 grace_period=grace_period,
                 coalesce_window=coalesce_window,
+                max_attempts=max_attempts,
             )
             for zone in zones
         }

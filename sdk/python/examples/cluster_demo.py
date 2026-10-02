@@ -7,7 +7,13 @@ from __future__ import annotations
 
 from a2a_control_plane import Channel, DevCluster, SpiffeId, WorkerClient
 from a2a_control_plane.subjects import agent_subject
-from a2a_control_plane.tasks import Task, TaskResult, make_task, succeeded
+from a2a_control_plane.tasks import (
+    TASK_STATUS_CANCELLED,
+    Task,
+    TaskResult,
+    make_task,
+    succeeded,
+)
 
 
 def step(title: str) -> None:
@@ -23,9 +29,13 @@ def main() -> None:
     cluster = DevCluster(zones=("eu-west", "us-east"), grace_period=60)
     for aggregator in cluster.aggregators.values():
         aggregator.on_result = lambda agent, result: results.append(
-            f"{agent}/{result.task_id} -> {result.payload.decode()}"
+            f"{agent}/{result.task_id} -> "
+            + ("CANCELLED" if result.status == TASK_STATUS_CANCELLED else result.payload.decode())
         )
         aggregator.on_task_failed = lambda agent, task: print(f"   task {task} on {agent} FAILED")
+        aggregator.on_reassign = lambda task, src, dst: print(
+            f"   task {task.task_id} reassigned {src} -> {dst} (attempt {task.attempt})"
+        )
 
     step("Register 3 workers in each zone (mTLS identity + signed challenge)")
     for zone in cluster.aggregators:
@@ -68,7 +78,7 @@ def main() -> None:
     cluster.advance(1)
     print(f"   recovered: {cluster.aggregators['eu-west'].worker_state('eu-west-w2')}")
 
-    step("Failure handling: eu-west-w1 dies mid-task and never returns")
+    step("Failure handling: eu-west-w1 dies mid-task; its task moves to a healthy worker")
     dead = cluster.workers[1]
     dead.on_task(handle)
     dead.offline = True
@@ -79,6 +89,17 @@ def main() -> None:
     print(f"   +60s:  {eu.worker_state('eu-west-w1')}")
     cluster.advance(60)  # grace period (60s) expires
     print(f"   +120s: {eu.worker_state('eu-west-w1')}")
+    print("   results:", results[-1])
+
+    step("Cancellation over the control subject")
+    slow = next(w for w in cluster.workers if w.identity.agent_id == "us-east-w0")
+    slow.on_task(lambda task: None)  # long-running: finishes later via complete()
+    slow.on_cancel(lambda task_id: print(f"   worker stopping {task_id}"))
+    us = cluster.aggregators["us-east"]
+    us.dispatch("us-east-w0", make_task("t4", b"long job"))
+    print(f"   running:   {us.worker_state('us-east-w0')}")
+    us.cancel("t4", "user aborted")
+    print(f"   cancelled: {us.worker_state('us-east-w0')}  ->  {results[-1]}")
 
     step("Registry view")
     for record in cluster.registry.workers():

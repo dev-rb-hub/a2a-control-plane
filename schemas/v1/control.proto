@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package a2a.controlplane.v1;
+
+option go_package = "github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1";
+option java_multiple_files = true;
+option java_package = "io.github.devrbhub.a2acontrolplane.v1";
+option csharp_namespace = "A2A.ControlPlane.V1";
+
+// ControlMessage is published by a Regional Aggregator on
+// a2a.zone.<zone_id>.agent.<agent_id>.control (spec/03-protocols.md, section 8).
+//
+// Receivers MUST ignore commands they do not recognize, so new commands can be added without
+// a major version bump.
+message ControlMessage {
+  oneof command {
+    CancelTask cancel_task = 1;
+    HeartbeatConfig heartbeat_config = 2;
+  }
+}
+
+// Asks the Worker to stop a task. The Worker answers with a TaskResult whose status is
+// TASK_STATUS_CANCELLED, unless the task already finished.
+message CancelTask {
+  string task_id = 1;
+
+  // Human-readable detail. MUST NOT contain secrets.
+  string reason = 2;
+}
+
+// Replaces heartbeat parameters (spec/03-protocols.md, section 6). A zero field means unchanged.
+message HeartbeatConfig {
+  uint32 base_interval_ms = 1;
+  uint32 max_interval_ms = 2;
+  uint32 miss_multiplier = 3;
+}

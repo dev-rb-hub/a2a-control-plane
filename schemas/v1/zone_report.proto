@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package a2a.controlplane.v1;
+
+import "state_delta.proto";
+
+option go_package = "github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1";
+option java_multiple_files = true;
+option java_package = "io.github.devrbhub.a2acontrolplane.v1";
+option csharp_namespace = "A2A.ControlPlane.V1";
+
+// ZoneStateReport is published by a Regional Aggregator on
+// a2a.zone.<zone_id>.aggregator.state (spec/03-protocols.md, section 9).
+message ZoneStateReport {
+  // MUST equal the zone in the subject and in the publisher's SPIFFE ID.
+  string zone_id = 1;
+
+  // Unix time in nanoseconds at which the report was assembled.
+  uint64 timestamp_ns = 2;
+
+  // Coalesced capability deltas, at most one per agent_id. Heartbeats are never included.
+  repeated AgentStateDelta deltas = 3;
+
+  // Worker lifecycle changes in the order they occurred.
+  repeated WorkerStateChange state_changes = 4;
+}
+
+message WorkerStateChange {
+  string agent_id = 1;
+  WorkerState state = 2;
+  uint64 timestamp_ns = 3;
+}
+
+// Mirrors the Worker state machine in spec/02-topology.md, section 5.
+enum WorkerState {
+  WORKER_STATE_UNSPECIFIED = 0;
+  WORKER_STATE_UNREGISTERED = 1;
+  WORKER_STATE_CHALLENGED = 2;
+  WORKER_STATE_REGISTERED = 3;
+  WORKER_STATE_IDLE = 4;
+  WORKER_STATE_EXECUTING = 5;
+  WORKER_STATE_DEGRADED = 6;
+}

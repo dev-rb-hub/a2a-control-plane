@@ -12,7 +12,7 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHOULD", "SHOULD NOT", "RECOMMEND
 | Hop | Transport | Port |
 |-----|-----------|------|
 | Worker to Aggregator | gRPC (HTTP/2) over mTLS, one long-lived bidirectional stream | 50051 |
-| Aggregator to CCR | gRPC over mTLS | 50051 |
+| Aggregator to CCR | gRPC over mTLS for registration and administration; zone state reports travel on the regional bus (Section 9) | 50051 |
 | Aggregator regional bus | NATS, subjects defined in [02-topology](02-topology.md) Section 6 | implementation defined |
 
 - Workers MUST NOT connect to the regional bus directly. The Aggregator MUST map each Worker stream to the Worker's subjects on the bus.
@@ -56,7 +56,7 @@ A heartbeat is an `AgentStateDelta` with an empty `changed_capabilities` map.
 - When a Worker has no deltas to send, it MUST send a heartbeat at the current interval.
 - The interval starts at 5 seconds (`base_interval`). After each consecutive heartbeat with no intervening state change, the interval MUST double, up to 60 seconds (`max_interval`). A state change MUST reset the interval to `base_interval`.
 - The Aggregator MUST declare a Worker `Degraded` (T7 in [02-topology](02-topology.md)) when no message has been received for `miss_multiplier` (default 3) times the current interval. The current interval is the wait that applies after the most recently received message, that is, after the doubling or reset caused by that message.
-- `base_interval`, `max_interval`, and the missed-interval multiplier MUST be configurable. The Aggregator MAY push new values on the `control` subject.
+- `base_interval`, `max_interval`, and the missed-interval multiplier MUST be configurable. The Aggregator MAY push new values to a Worker with a `HeartbeatConfig` control message (Section 8).
 - An Aggregator MUST NOT forward heartbeats to the CCR. It MUST report only liveness state changes.
 
 ## 7. Task Messages
@@ -78,14 +78,60 @@ Tasks and results use the messages in [`schemas/v1/task.proto`](../schemas/v1/ta
 - An Aggregator MUST ignore a `TaskResult` whose `task_id` is not in flight for that Worker. Any `TaskResult` for an in-flight task, whatever its status, completes that task.
 - When the last in-flight task of a Worker completes, the Worker returns to `Idle` (T6 in [02-topology](02-topology.md)).
 
-## 8. Versioning
+### 7.3 Reassignment
+
+An Aggregator MAY reassign a task to another Worker in its zone. It MAY do so when:
+
+- the Worker returned `TASK_STATUS_REJECTED` or `TASK_STATUS_FAILED` with `error.retryable` set; or
+- the Worker was removed while the task was in flight (T9 and T10 in [02-topology](02-topology.md)).
+
+When reassigning, the Aggregator:
+
+- MUST NOT reassign a task for which cancellation was requested, or whose `deadline_ns` has passed;
+- MUST NOT send a task to a Worker that has already had it, and MUST NOT exceed a configurable maximum number of attempts (default 3);
+- MUST choose only among Workers that may receive tasks (`Idle` or `Executing`);
+- MUST increment `attempt` and keep every other `Task` field unchanged;
+- MUST have at most one Worker holding a given `task_id` at any time;
+- MUST report only the final outcome to the task's originator, not results that led to a reassignment; and
+- if it cannot reassign, MUST report the last result, or a failure if the Worker was lost.
+
+### 7.4 Cancellation
+
+- An Aggregator requests cancellation with a `CancelTask` control message (Section 8) to the Worker holding the task.
+- A Worker that receives `CancelTask` for an active task MUST stop it and reply with `TASK_STATUS_CANCELLED` with error code `cancelled`. This is the one `TaskResult` for that task (Section 7.2).
+- A Worker that receives `CancelTask` for a task it has already completed or does not hold MUST ignore it. A Worker MUST NOT send a result for a cancelled task after its `CANCELLED` result.
+- If the Worker is lost before replying, the Aggregator MUST NOT reassign the task.
+
+## 8. Control Messages
+
+Commands to a Worker use `ControlMessage` ([`schemas/v1/control.proto`](../schemas/v1/control.proto)) on the Worker's `control` subject. The `a2a-type` header MUST be `a2a.controlplane.v1.ControlMessage`.
+
+- Only the Aggregator of the Worker's zone MAY publish on a `control` subject ([02-topology](02-topology.md) Section 6.3).
+- A Worker MUST ignore a `ControlMessage` whose command it does not recognize.
+- `CancelTask`: see Section 7.4.
+- `HeartbeatConfig`: a zero field means that parameter is unchanged. A Worker MUST ignore the message if the resulting `base_interval` would exceed `max_interval`, or if `miss_multiplier` would be below 1. The Worker applies the new values from its next message. The Aggregator MUST apply the same values to its own liveness tracking when it sends the message.
+- The commands `drain` and `shutdown` listed in earlier drafts are not defined in this version.
+
+## 9. Zone State Reports
+
+An Aggregator informs the CCR of its zone's state with `ZoneStateReport` ([`schemas/v1/zone_report.proto`](../schemas/v1/zone_report.proto)) on `a2a.zone.<zone_id>.aggregator.state`. The `a2a-type` header MUST be `a2a.controlplane.v1.ZoneStateReport`.
+
+- `zone_id` MUST equal the zone in the subject. The CCR MUST discard a report where they differ, or where a contained delta's `zone_id` differs.
+- `deltas` MUST contain at most one coalesced delta per `agent_id` (Section 5.1) and MUST NOT contain heartbeats.
+- `state_changes` lists Worker lifecycle changes in the order they occurred. An Aggregator MUST NOT delay a lifecycle change to wait for the coalescing window, and MAY include pending deltas in the same report.
+- A report carrying only deltas MUST be sent when the coalescing window expires.
+- The CCR MUST apply a state change only for a registered Worker, MUST ignore one older than the last applied for that Worker, and MUST ignore an unrecognized `WorkerState`. It MUST remove a Worker's record when the state is `WORKER_STATE_UNREGISTERED`.
+- Only the Aggregator of a zone MAY publish on its `aggregator.state` subject, and only the CCR MAY subscribe to it ([02-topology](02-topology.md) Section 6.3).
+
+## 10. Versioning
 
 - The schema package is versioned (`a2a.controlplane.v1`). Backward-incompatible changes MUST use a new package and a new directory under `schemas/`.
 - Peers MUST advertise supported versions during registration, and MUST use the highest common version.
 
-## 9. Security Considerations
+## 11. Security Considerations
 
 - Task payloads are untrusted input to the Worker and result payloads are untrusted input to the Aggregator.
+- A compromised Worker can cause repeated reassignment only up to the maximum number of attempts, and only to Workers in its own zone.
 - Without a size cap, an authenticated Worker could exhaust Aggregator memory. Receivers MUST enforce maximum message size limits.
 - Adaptive heartbeat backoff reduces idle traffic but lengthens the failure detection time to at most 3 times `max_interval`. Deployments with tighter detection needs MUST lower `max_interval`.
 - Trace context is untrusted input and MUST NOT influence authorization.

@@ -36,6 +36,22 @@ class AdaptiveHeartbeat:
     def last_message_at(self) -> float | None:
         return self._last_message_at
 
+    def configure(
+        self,
+        base_interval: float | None = None,
+        max_interval: float | None = None,
+        miss_multiplier: int | None = None,
+    ) -> bool:
+        """Apply new parameters (spec 03, section 8); return False and change nothing if invalid."""
+        base = base_interval or self.base_interval
+        maximum = max_interval or self.max_interval
+        multiplier = miss_multiplier or self.miss_multiplier
+        if not 0 < base <= maximum or multiplier < 1:
+            return False
+        self.base_interval, self.max_interval, self.miss_multiplier = base, maximum, multiplier
+        self._interval = min(max(self._interval, base), maximum)
+        return True
+
     def record_state_change(self, now: float) -> None:
         """A delta with changed capabilities was sent or received; it also counts as liveness."""
         self._interval = self.base_interval

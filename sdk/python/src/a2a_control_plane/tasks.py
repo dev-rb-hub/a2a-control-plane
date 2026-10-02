@@ -25,6 +25,7 @@ __all__ = [
     "Task",
     "TaskError",
     "TaskResult",
+    "cancelled",
     "failed",
     "make_task",
     "rejected",
@@ -82,3 +83,7 @@ def failed(task: Task, code: str, message: str = "", *, retryable: bool = False)
 
 def rejected(task: Task, code: str, message: str = "", *, retryable: bool = True) -> TaskResult:
     return _error_result(task, TASK_STATUS_REJECTED, code, message, retryable)
+
+
+def cancelled(task: Task) -> TaskResult:
+    return _error_result(task, TASK_STATUS_CANCELLED, "cancelled", "", False)

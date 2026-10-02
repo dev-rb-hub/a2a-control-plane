@@ -1,6 +1,7 @@
 """Central Cluster Registry role (spec 02, sections 4.1 and 5; spec 01, section 6).
 
-Aggregator-to-registry calls are plain method calls here; they model the gRPC hop of spec 03.
+Registration challenges are direct calls (an RPC schema is not yet defined). Zone state arrives as
+``ZoneStateReport`` messages on the regional bus (spec 03, section 9).
 """
 
 from __future__ import annotations
@@ -12,10 +13,14 @@ from dataclasses import dataclass
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+from google.protobuf.message import DecodeError
 
+from a2a_control_plane.bus import InMemoryBus, Message
 from a2a_control_plane.delta import AgentStateDelta, AgentStateView
 from a2a_control_plane.identity import Role, SpiffeId
+from a2a_control_plane.reports import WorkerStateChange, ZoneStateReport, from_proto_state
 from a2a_control_plane.state import WorkerState
+from a2a_control_plane.subjects import REGISTRY_AGGREGATOR_STATE_PATTERN, Subject
 
 PublicKeyLookup = Callable[[SpiffeId], Ed25519PublicKey | None]
 
@@ -30,6 +35,7 @@ class WorkerRecord:
     identity: SpiffeId
     state: WorkerState
     view: AgentStateView
+    state_ts: int = 0
 
 
 class Registry:
@@ -39,15 +45,20 @@ class Registry:
         public_key_lookup: PublicKeyLookup,
         clock: Callable[[], float] = time.monotonic,
         challenge_timeout: float = 10.0,
+        bus: InMemoryBus | None = None,
     ) -> None:
         if identity.role is not Role.REGISTRY:
             raise ValueError("registry requires a registry identity")
         self.identity = identity
         self.challenge_timeout = challenge_timeout
+        self.dropped = 0  # malformed or inconsistent zone reports
         self._lookup = public_key_lookup
         self._clock = clock
         self._challenges: dict[str, tuple[bytes, float]] = {}
         self._workers: dict[str, WorkerRecord] = {}
+        if bus is not None:
+            self._session = bus.connect(identity)
+            self._session.subscribe(REGISTRY_AGGREGATOR_STATE_PATTERN, self._on_report)
 
     def issue_challenge(self, worker: SpiffeId) -> bytes:
         nonce = secrets.token_bytes(16)  # 128 bits, single use
@@ -79,10 +90,31 @@ class Registry:
         record = self._workers.get(str(self._worker_id(delta.zone_id, delta.agent_id)))
         return record is not None and record.view.apply(delta)
 
-    def report_state(self, worker: SpiffeId, state: WorkerState) -> None:
+    def _on_report(self, message: Message) -> None:
+        try:
+            subject = Subject.parse(message.subject)
+            report = ZoneStateReport.FromString(message.payload)
+            if report.zone_id != subject.zone_id:
+                raise ValueError("report zone does not match subject")
+            for delta in report.deltas:
+                if delta.zone_id != report.zone_id:
+                    raise ValueError("delta zone does not match report")
+                self.apply_delta(delta)
+            for change in report.state_changes:
+                self._apply_state_change(report.zone_id, change)
+        except (DecodeError, ValueError):
+            self.dropped += 1
+
+    def _apply_state_change(self, zone_id: str, change: WorkerStateChange) -> None:
+        worker = self._worker_id(zone_id, change.agent_id)
         record = self._workers.get(str(worker))
-        if record is not None:
-            record.state = state
+        state = from_proto_state(change.state)
+        if record is None or state is None or change.timestamp_ns < record.state_ts:
+            return
+        if state is WorkerState.UNREGISTERED:
+            self.revoke(worker)
+        else:
+            record.state, record.state_ts = state, change.timestamp_ns
 
     def revoke(self, worker: SpiffeId) -> None:
         self._challenges.pop(str(worker), None)
