@@ -30,6 +30,7 @@ Current multi-agent frameworks rely heavily on noisy peer-to-peer (P2P) mesh net
     *   [`03-protocols`](spec/03-protocols.md): Wire protocol optimization (Protobuf & Adaptive Heartbeats).
 *   **[`/schemas`](schemas/)**: Official Protobuf (`.proto`) definition files for data exchange.
 *   **[`/reference`](reference/)**: Implementation blueprints including Kubernetes manifests, local test environments, and Harness CD integrations.
+*   **[`/sdk/python`](sdk/python/)**: Reference Python SDK (pre-alpha). The core layer (identity, subjects, worker state machine, adaptive heartbeats, delta streaming) is implemented and tested against the spec.
 
 ## 🤝 Contributing & Governance
 This is an open standard. Changes to the core specification follow an RFC process detailed in our [GOVERNANCE.md](GOVERNANCE.md). 
