@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package a2a.controlplane.v1;
 
-option go_package = "github.com/open-a2a/a2a-control-plane/schemas/v1;a2av1";
+option go_package = "github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1";
 option java_multiple_files = true;
-option java_package = "org.opena2a.controlplane.v1";
+option java_package = "io.github.devrbhub.a2acontrolplane.v1";
 option csharp_namespace = "A2A.ControlPlane.V1";
 
 // AgentStateDelta reports only the state that changed for one agent.

@@ -6,6 +6,8 @@
 
 > An open standard for **zero-trust agent-to-agent (A2A) control planes**: secure, low-noise orchestration of large multi-agent AI systems using SPIFFE/SPIRE identity, mTLS, regional aggregators, NATS messaging, gRPC, and Protocol Buffers.
 
+> **Note:** this project is independent of, and not affiliated with, the Linux Foundation [Agent2Agent (A2A) Protocol](https://github.com/a2aproject/A2A). That protocol defines application-level agent communication (Agent Cards, tasks, JSON-RPC); this standard defines the infrastructure layer underneath (identity, topology, and state streaming) and is designed to complement it.
+
 ## ✨ Key Features
 
 *   **Zero-trust identity**: SPIFFE/SPIRE X.509-SVIDs, TLS 1.3 mTLS, and challenge-response registration for every agent.
@@ -42,4 +44,4 @@ To propose an update:
 multi-agent systems, agentic AI architecture, agent-to-agent (A2A) protocol, AI agent orchestration, agent control plane, zero-trust networking, SPIFFE, SPIRE, mTLS, NATS, gRPC, Protobuf, Kubernetes NetworkPolicy, distributed systems, open standard, RFC 2119.
 
 ---
-*Maintained by the Open-A2A Working Group.*
+*Maintained by [@dev-rb-hub](https://github.com/dev-rb-hub) and contributors.*
