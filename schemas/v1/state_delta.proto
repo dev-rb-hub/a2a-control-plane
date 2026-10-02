@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package a2a.controlplane.v1;
+
+option go_package = "github.com/open-a2a/a2a-control-plane/schemas/v1;a2av1";
+option java_multiple_files = true;
+option java_package = "org.opena2a.controlplane.v1";
+option csharp_namespace = "A2A.ControlPlane.V1";
+
+// AgentStateDelta reports only the state that changed for one agent.
+// An empty changed_capabilities map is a heartbeat (see spec/03-protocols.md).
+//
+// Wire-size notes:
+//  - Field numbers 1-15 encode their tag in a single byte; all fields stay in that range.
+//  - Fields are numbered by expected frequency of presence.
+//  - No wrapper messages or optional scalars are used, so absent fields cost zero bytes.
+message AgentStateDelta {
+  // Unique agent identifier; MUST match the agent component of the sender's SPIFFE ID.
+  string agent_id = 1;
+
+  // Unix time in nanoseconds when the change was observed. Used for ordering.
+  uint64 timestamp_ns = 2;
+
+  // Zone identifier; MUST match the zone component of the sender's SPIFFE ID.
+  string zone_id = 3;
+
+  // Only the capabilities that changed. An empty value means the capability was removed.
+  map<string, string> changed_capabilities = 4;
+
+  // OpenTelemetry context, compact binary form: version(1) + trace-id(16) + span-id(8) + flags(1).
+  // Omit when there is no active trace.
+  bytes trace_context = 5;
+}

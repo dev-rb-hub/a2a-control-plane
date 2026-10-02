@@ -1,0 +1,99 @@
+# Reference: Kubernetes network isolation for the a2a-control-plane topology.
+#
+# Security model (see spec/02-topology.md, Section 4):
+#   - Workers talk ONLY to their Regional Aggregator. There is no Worker-to-Worker
+#     path, so a compromised Worker cannot move laterally.
+#   - Aggregators live in their own namespace and are the sole ingress source for Workers.
+#   - Workers never initiate connections to the Registry or to anything else.
+#
+# Assumptions (adjust to your cluster):
+#   - Workers run in namespace "a2a-workers" with label role=a2a-worker.
+#   - Aggregators run in namespace "a2a-aggregators" with label role=a2a-aggregator.
+#   - The CNI plugin enforces NetworkPolicy (for example Calico or Cilium).
+#   - gRPC port is 50051 (spec/03-protocols.md, Section 2).
+#
+# NetworkPolicy is additive: a pod selected by any policy is denied all traffic of the
+# listed policyTypes except what some policy explicitly allows.
+---
+# 1. Default-deny ingress for Workers.
+#    Selecting Workers with no ingress rules blocks ALL inbound traffic, including from
+#    other Workers (same namespace, same labels). This is the rule that eliminates
+#    lateral movement.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: a2a-worker-default-deny-ingress
+  namespace: a2a-workers
+spec:
+  podSelector:
+    matchLabels:
+      role: a2a-worker
+  policyTypes:
+    - Ingress
+---
+# 2. Allow ingress to Workers ONLY from Aggregator pods, ONLY on 50051/TCP (gRPC).
+#    namespaceSelector and podSelector are in the SAME list item, so they are ANDed:
+#    a pod must be labeled role=a2a-aggregator AND live in the aggregator namespace.
+#    Listing them as separate items would OR them and would allow every pod in the
+#    aggregator namespace, which is broader than the standard permits.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: a2a-worker-allow-ingress-from-aggregator
+  namespace: a2a-workers
+spec:
+  podSelector:
+    matchLabels:
+      role: a2a-worker
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: a2a-aggregators
+          podSelector:
+            matchLabels:
+              role: a2a-aggregator
+      ports:
+        - protocol: TCP
+          port: 50051
+---
+# 3. Restrict Worker egress to the aggregator namespace, plus DNS.
+#    Once Egress is listed in policyTypes, everything not allowed below is denied,
+#    including Worker-to-Worker and Worker-to-Registry traffic.
+#    DNS is required for the Worker to resolve the Aggregator service name; it is
+#    limited to kube-dns in kube-system.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: a2a-worker-restrict-egress
+  namespace: a2a-workers
+spec:
+  podSelector:
+    matchLabels:
+      role: a2a-worker
+  policyTypes:
+    - Egress
+  egress:
+    # Workers -> Aggregators (gRPC).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: a2a-aggregators
+      ports:
+        - protocol: TCP
+          port: 50051
+    # Workers -> cluster DNS.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

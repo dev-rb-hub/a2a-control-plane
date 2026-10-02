@@ -1,0 +1,7 @@
+# Every change requires approval from a code owner.
+*                   @dev-rb-hub
+/spec/              @dev-rb-hub
+/schemas/           @dev-rb-hub
+/reference/         @dev-rb-hub
+/GOVERNANCE.md      @dev-rb-hub
+/.github/           @dev-rb-hub
