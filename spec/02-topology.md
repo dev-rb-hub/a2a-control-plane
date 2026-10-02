@@ -177,6 +177,8 @@ Examples:
 - `a2a.zone.eu-west-1.agent.*.state` matches the state subject of every Worker in zone `eu-west-1`.
 - `a2a.zone.*.agent.worker-7.tasks` is not permitted for any Worker, and for an Aggregator only if the zone token is its own.
 
+The CCR MUST NOT publish to the regional bus; it communicates with Aggregators over gRPC ([03-protocols](03-protocols.md) Section 2).
+
 ### 6.4 Authorization Binding
 
 - Subject permissions MUST be derived from the authenticated SPIFFE identity (see [01-identity](01-identity.md)), not from client-supplied claims.

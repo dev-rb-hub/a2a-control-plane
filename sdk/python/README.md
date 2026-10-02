@@ -9,9 +9,19 @@ This package is independent of, and not affiliated with, the Linux Foundation Ag
 | Layer | Modules | Status |
 |-------|---------|--------|
 | Core (pure logic, no I/O) | `tokens`, `identity`, `subjects`, `state`, `heartbeat`, `delta` | implemented |
-| Roles over a transport interface | `WorkerClient`, `Aggregator`, `Registry` | planned |
-| Transports | in-memory, gRPC + mTLS, NATS | planned |
+| Roles over an in-memory bus | `Registry`, `Aggregator`, `WorkerClient`, `InMemoryBus` | implemented |
+| Dev tooling | `DevCA` (Ed25519, not SPIRE), `ManualClock`, `DevCluster` | implemented |
+| Transports | gRPC + mTLS, NATS | planned |
 | Bridge to the A2A protocol `a2a-sdk` | task dispatch via `…agent.<id>.tasks` | planned |
+
+## Try it
+
+```powershell
+.venv\Scripts\python examples\cluster_demo.py        # two-zone cluster: register, dispatch, isolate, fail, recover
+.venv\Scripts\python examples\traffic_benchmark.py   # mesh vs hub vs delta + adaptive heartbeats
+```
+
+Task and result payloads are opaque bytes for now; their schemas are not yet part of the standard.
 
 ## Development
 

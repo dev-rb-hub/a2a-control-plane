@@ -55,7 +55,7 @@ A heartbeat is an `AgentStateDelta` with an empty `changed_capabilities` map.
 - Any delta from a Worker MUST count as a liveness signal. A Worker that has sent a delta within the current heartbeat interval MUST NOT send a separate heartbeat.
 - When a Worker has no deltas to send, it MUST send a heartbeat at the current interval.
 - The interval starts at 5 seconds (`base_interval`). After each consecutive heartbeat with no intervening state change, the interval MUST double, up to 60 seconds (`max_interval`). A state change MUST reset the interval to `base_interval`.
-- The Aggregator MUST declare a Worker `Degraded` (T7 in [02-topology](02-topology.md)) when no message has been received for 3 times the interval most recently in effect.
+- The Aggregator MUST declare a Worker `Degraded` (T7 in [02-topology](02-topology.md)) when no message has been received for `miss_multiplier` (default 3) times the current interval. The current interval is the wait that applies after the most recently received message, that is, after the doubling or reset caused by that message.
 - `base_interval`, `max_interval`, and the missed-interval multiplier MUST be configurable. The Aggregator MAY push new values on the `control` subject.
 - An Aggregator MUST NOT forward heartbeats to the CCR. It MUST report only liveness state changes.
 
