@@ -13,7 +13,7 @@ Open-standard repository with a reference Python SDK. See [AGENTS.md](../AGENTS.
 - Use MUST / MUST NOT / SHOULD / MAY only in capitals and only for normative statements.
 - Zone and agent IDs follow the token grammar in `spec/02-topology.md` Section 6.1.
 - Keep ports, subjects, and state names consistent across spec, schemas, and reference files.
-- No build step; validate proto files with `buf lint` if available.
+- Run the SDK checks in AGENTS.md before finishing; after editing a `.proto`, run `sdk/python/scripts/gen_proto.py`.
 
 ## Setup checklist
 
@@ -22,7 +22,7 @@ Open-standard repository with a reference Python SDK. See [AGENTS.md](../AGENTS.
 - [x] Repository scaffolded (spec, schemas, reference, governance, templates)
 - [x] Content drafted (specs, state_delta.proto, NetworkPolicy)
 - [x] Extensions: none required
-- [x] Compile: not applicable (documentation repository)
+- [x] Compile: SDK checks pass (`pytest`, `ruff`, `mypy`; commands in AGENTS.md)
 - [x] Tasks: not needed
-- [x] Launch: not applicable
+- [x] Launch: `python examples/cluster_demo.py` (from `sdk/python`) runs the in-process cluster
 - [x] Documentation complete (README.md)
