@@ -21,6 +21,7 @@ dependencies = ["protobuf>=6.31", "cryptography>=42"]
 
 [project.optional-dependencies]
 a2a = ["a2a-sdk>=1.2"]
+crewai = ["crewai"]
 dev = ["pytest>=8", "grpcio-tools==1.76.0", "ruff>=0.6", "mypy>=1.11", "types-protobuf", "a2a-sdk>=1.2"]
 
 [project.urls]
@@ -41,7 +42,19 @@ extend-exclude = ["src/a2a_control_plane/_proto"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
+[tool.ruff.lint.isort]
+known-third-party = ["crewai", "a2a"]
+
 [tool.mypy]
 strict = true
 python_version = "3.11"
 exclude = ["src/a2a_control_plane/_proto"]
+
+[[tool.mypy.overrides]]
+# Optional, untyped dependency; the integration is scaffolding until it is implemented.
+module = ["crewai", "crewai.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "a2a_control_plane.integrations.crewai.*"
+disallow_subclassing_any = false

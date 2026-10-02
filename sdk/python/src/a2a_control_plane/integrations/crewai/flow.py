@@ -74,11 +74,12 @@ class A2ARegionalAggregatorFlow(Flow[RegionalAggregatorState]):
 
         TODO: Build ``a2a.controlplane.v1.AgentStateDelta`` messages from
         coalesced child changes, preserving per-agent timestamp ordering and
-        zone identity. Batch/coalesce before sending over the Aggregator-to-CCR
-        mTLS gRPC channel; do not send heartbeat messages. Preserve unknown
+        zone identity. Batch them into one ``ZoneStateReport`` and publish it on
+        this zone's ``aggregator.state`` subject (spec 03 section 9); do not
+        send heartbeat messages. Preserve unknown
         protobuf fields when relaying messages and clear pending state only
-        after successful delivery. Use the schema in
-        ``schemas/v1/state_delta.proto`` rather than inventing a parallel wire
-        format.
+        after successful publication. Use the schemas in
+        ``schemas/v1/state_delta.proto`` and ``schemas/v1/zone_report.proto``
+        rather than inventing a parallel wire format.
         """
         raise NotImplementedError

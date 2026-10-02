@@ -42,12 +42,12 @@ implementation sequence.
      [`reference/k8s-network-isolation.yaml`](../../../../../../reference/k8s-network-isolation.yaml).
 
 4. **Coalesced registry updates — `flow.py`**
-   - Batch child changes and stream micro-deltas to the Central Cluster
-     Registry over the Aggregator-to-CCR mTLS gRPC channel; do not forward
-     Worker heartbeats.
-   - Serialize the existing
-     [`AgentStateDelta`](../../../../../../schemas/v1/state_delta.proto)
-     protobuf schema and follow [spec 03, delta-state streaming](../../../../../../spec/03-protocols.md).
+   - Batch child changes into `ZoneStateReport` messages published on the
+     zone's `aggregator.state` subject; do not forward Worker heartbeats.
+   - Build the deltas with the existing
+     [`AgentStateDelta`](../../../../../../schemas/v1/state_delta.proto) and
+     [`ZoneStateReport`](../../../../../../schemas/v1/zone_report.proto) schemas
+     and follow [spec 03, zone state reports](../../../../../../spec/03-protocols.md).
 
 ## Stub map
 
@@ -58,7 +58,7 @@ implementation sequence.
 | `A2AWorkerAgent.consume_tasks` | Authorized async task execution and results | spec 02 §§4, 6; spec 03 §7 |
 | `A2ARegionalAggregatorFlow.aggregate_child_telemetry` | Zone-local validation, aggregation, and coalescing | spec 02 §§4, 6; spec 03 §5 |
 | `A2ARegionalAggregatorFlow.enforce_network_policy_boundaries` | Zone and subject boundary coordination | spec 02 §§4, 6 |
-| `A2ARegionalAggregatorFlow.flush_registry_deltas` | Batched protobuf deltas to CCR | spec 03 §§2, 5; `schemas/v1/state_delta.proto` |
+| `A2ARegionalAggregatorFlow.flush_registry_deltas` | Batched `ZoneStateReport` to the CCR | spec 03 §§5, 9; `schemas/v1/zone_report.proto` |
 
 CrewAI is an optional integration dependency and is not added to the core SDK
 dependency set by these scaffolds. Production implementation should add its
