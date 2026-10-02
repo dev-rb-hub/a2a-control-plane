@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 
 from google.protobuf.message import DecodeError
 
-from a2a_control_plane.bus import InMemoryBus, Message, Session
+from a2a_control_plane.bus import TYPE_HEADER, InMemoryBus, Message, Session
 from a2a_control_plane.delta import (
     AgentStateDelta,
     AgentStateView,
@@ -21,10 +21,10 @@ from a2a_control_plane.identity import Role, SpiffeId
 from a2a_control_plane.registry import Registry
 from a2a_control_plane.state import WorkerEvent, WorkerState, WorkerStateMachine
 from a2a_control_plane.subjects import PREFIX, Channel, Subject, agent_subject
+from a2a_control_plane.tasks import TASK_TYPE, Task, TaskResult
+from a2a_control_plane.tokens import validate_token
 
-TASK_ID_HEADER = "task-id"
-
-ResultCallback = Callable[[str, str, bytes], None]  # (agent_id, task_id, payload)
+ResultCallback = Callable[[str, TaskResult], None]  # (agent_id, result)
 TaskFailedCallback = Callable[[str, str], None]  # (agent_id, task_id)
 
 
@@ -68,8 +68,8 @@ class Aggregator:
         self._heartbeat_factory = heartbeat_factory
         self._grace_period = grace_period
         self._coalesce_window = coalesce_window
-        self._on_result = on_result
-        self._on_task_failed = on_task_failed
+        self.on_result = on_result
+        self.on_task_failed = on_task_failed
         self._workers: dict[str, _Entry] = {}
 
         self._session = bus.connect(identity)
@@ -146,15 +146,21 @@ class Aggregator:
 
     def _on_results(self, message: Message) -> None:
         entry = self._entry_for(message)
-        task_id = message.headers.get(TASK_ID_HEADER)
-        if entry is None or task_id is None or task_id not in entry.in_flight:
+        if entry is None:
             return
-        entry.in_flight.discard(task_id)
+        try:
+            result = TaskResult.FromString(message.payload)
+        except DecodeError:
+            self.dropped += 1
+            return
+        if result.task_id not in entry.in_flight:
+            return  # spec 03, 7.2: results for tasks not in flight are ignored
+        entry.in_flight.discard(result.task_id)
         if not entry.in_flight and entry.machine.apply(WorkerEvent.TASKS_COMPLETED):  # T6
             self._registry.report_state(entry.identity, entry.machine.state)
-        if self._on_result is not None:
+        if self.on_result is not None:
             assert entry.identity.agent_id is not None
-            self._on_result(entry.identity.agent_id, task_id, message.payload)
+            self.on_result(entry.identity.agent_id, result)
 
     def _entry_for(self, message: Message) -> _Entry | None:
         try:
@@ -165,18 +171,25 @@ class Aggregator:
 
     # --- dispatch ------------------------------------------------------------------------
 
-    def dispatch(self, agent_id: str, task_id: str, payload: bytes) -> bool:
-        """Send a task to a worker. Only Idle/Executing workers receive tasks (spec 02, 5.3)."""
+    def dispatch(self, agent_id: str, task: Task) -> bool:
+        """Send a task to a worker. Only Idle/Executing workers receive tasks (spec 02, 5.3).
+
+        Returns False if the worker cannot take it. Raises ValueError for an invalid or
+        already in-flight task_id (spec 03, 7.1).
+        """
+        validate_token(task.task_id, "task_id")
+        if any(task.task_id in e.in_flight for e in self._workers.values()):
+            raise ValueError(f"task_id {task.task_id!r} is already in flight")
         entry = self._workers.get(agent_id)
         if entry is None or not entry.machine.can_receive_tasks:
             return False
-        entry.in_flight.add(task_id)
+        entry.in_flight.add(task.task_id)
         if entry.machine.apply(WorkerEvent.TASK_ACCEPTED):  # T5
             self._registry.report_state(entry.identity, WorkerState.EXECUTING)
         self._session.publish(
             agent_subject(self.zone_id, agent_id, Channel.TASKS),
-            payload,
-            {TASK_ID_HEADER: task_id},
+            task.SerializeToString(),
+            {TYPE_HEADER: TASK_TYPE},
         )
         return True
 
@@ -240,9 +253,9 @@ class Aggregator:
         agent_id = entry.identity.agent_id
         assert agent_id is not None
         entry.machine.apply(event)
-        if self._on_task_failed is not None:
+        if self.on_task_failed is not None:
             for task_id in sorted(entry.in_flight):
-                self._on_task_failed(agent_id, task_id)
+                self.on_task_failed(agent_id, task_id)
         if entry.session is not None:
             entry.session.close()
         del self._workers[agent_id]

@@ -59,13 +59,33 @@ A heartbeat is an `AgentStateDelta` with an empty `changed_capabilities` map.
 - `base_interval`, `max_interval`, and the missed-interval multiplier MUST be configurable. The Aggregator MAY push new values on the `control` subject.
 - An Aggregator MUST NOT forward heartbeats to the CCR. It MUST report only liveness state changes.
 
-## 7. Versioning
+## 7. Task Messages
+
+Tasks and results use the messages in [`schemas/v1/task.proto`](../schemas/v1/task.proto). The `a2a-type` header MUST be `a2a.controlplane.v1.Task` or `a2a.controlplane.v1.TaskResult` respectively.
+
+### 7.1 Dispatch
+
+- An Aggregator MUST publish a `Task` only on the `tasks` subject of a Worker in its own zone that is `Idle` or `Executing` (see [02-topology](02-topology.md) Section 5.3).
+- `task_id` MUST satisfy the token grammar of [02-topology](02-topology.md) Section 6.1 and MUST be unique among the in-flight tasks of the zone. An Aggregator MUST NOT dispatch a `task_id` that is already in flight.
+- `attempt` MUST start at 1 and MUST be incremented when the Aggregator reassigns the task.
+- `payload`, `kind`, and `content_type` are opaque to the control plane. Implementations MUST NOT interpret them for routing or authorization decisions.
+
+### 7.2 Results
+
+- A Worker MUST publish exactly one `TaskResult` on its `results` subject for each `Task` it receives, with `task_id` copied from the `Task`.
+- A Worker that cannot run a task MUST reply with `TASK_STATUS_REJECTED`. If `deadline_ns` is non-zero and has passed on receipt, the Worker MUST NOT run the task and MUST reply `TASK_STATUS_REJECTED` with error code `deadline_exceeded`.
+- When `status` is not `TASK_STATUS_SUCCEEDED`, `error` MUST be set and `payload` SHOULD be empty. `TaskError.retryable` is a hint; the Aggregator decides whether to reassign.
+- An Aggregator MUST ignore a `TaskResult` whose `task_id` is not in flight for that Worker. Any `TaskResult` for an in-flight task, whatever its status, completes that task.
+- When the last in-flight task of a Worker completes, the Worker returns to `Idle` (T6 in [02-topology](02-topology.md)).
+
+## 8. Versioning
 
 - The schema package is versioned (`a2a.controlplane.v1`). Backward-incompatible changes MUST use a new package and a new directory under `schemas/`.
 - Peers MUST advertise supported versions during registration, and MUST use the highest common version.
 
-## 8. Security Considerations
+## 9. Security Considerations
 
+- Task payloads are untrusted input to the Worker and result payloads are untrusted input to the Aggregator.
 - Without a size cap, an authenticated Worker could exhaust Aggregator memory. Receivers MUST enforce maximum message size limits.
 - Adaptive heartbeat backoff reduces idle traffic but lengthens the failure detection time to at most 3 times `max_interval`. Deployments with tighter detection needs MUST lower `max_interval`.
 - Trace context is untrusted input and MUST NOT influence authorization.

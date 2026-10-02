@@ -21,7 +21,7 @@ This package is independent of, and not affiliated with, the Linux Foundation Ag
 .venv\Scripts\python examples\traffic_benchmark.py   # mesh vs hub vs delta + adaptive heartbeats
 ```
 
-Task and result payloads are opaque bytes for now; their schemas are not yet part of the standard.
+Tasks and results use the `Task` and `TaskResult` messages from `schemas/v1/task.proto` (spec 03, section 7); `payload` stays opaque to the control plane.
 
 ## Development
 

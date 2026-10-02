@@ -11,8 +11,27 @@ from a2a_control_plane import (
 )
 from a2a_control_plane.delta import make_delta
 from a2a_control_plane.subjects import agent_subject
+from a2a_control_plane.tasks import (
+    TASK_STATUS_FAILED,
+    TASK_STATUS_REJECTED,
+    TASK_STATUS_SUCCEEDED,
+    Task,
+    TaskResult,
+    make_task,
+    succeeded,
+)
 
 TD = "example.org"
+
+
+def upper(task: Task) -> TaskResult:
+    return succeeded(task, task.payload.upper())
+
+
+def collect(cluster: DevCluster, zone: str = "z1") -> list[tuple[str, TaskResult]]:
+    results: list[tuple[str, TaskResult]] = []
+    cluster.aggregators[zone].on_result = lambda agent, result: results.append((agent, result))
+    return results
 
 
 def agg_state(cluster: DevCluster, agent_id: str, zone: str = "z1") -> WorkerState | None:
@@ -146,13 +165,15 @@ def test_garbage_payload_is_dropped() -> None:
 
 
 def test_dispatch_runs_task_and_returns_to_idle() -> None:
-    results: list[tuple[str, str, bytes]] = []
     c = DevCluster()
-    c.aggregators["z1"]._on_result = lambda a, t, p: results.append((a, t, p))
+    results = collect(c)
     w = c.add_worker("w1")
-    w.on_task(lambda task_id, payload: payload.upper())
-    assert c.aggregators["z1"].dispatch("w1", "t1", b"hello")
-    assert results == [("w1", "t1", b"HELLO")]
+    w.on_task(upper)
+    assert c.aggregators["z1"].dispatch("w1", make_task("t1", b"hello"))
+    [(agent, result)] = results
+    assert agent == "w1" and result.task_id == "t1"
+    assert result.status == TASK_STATUS_SUCCEEDED and result.payload == b"HELLO"
+    assert result.completed_at_ns > 0
     assert agg_state(c, "w1") is WorkerState.IDLE
     assert w.state is WorkerState.IDLE
 
@@ -160,9 +181,9 @@ def test_dispatch_runs_task_and_returns_to_idle() -> None:
 def test_executing_while_task_in_flight() -> None:
     c = DevCluster()
     w = c.add_worker("w1")
-    w.on_task(lambda *_: b"")
+    w.on_task(upper)
     w.offline = True  # task is delivered but never answered
-    c.aggregators["z1"].dispatch("w1", "t1", b"x")
+    c.aggregators["z1"].dispatch("w1", make_task("t1"))
     assert agg_state(c, "w1") is WorkerState.EXECUTING
     assert registry_state(c, "w1") is WorkerState.EXECUTING
 
@@ -171,10 +192,83 @@ def test_dispatch_refused_for_unknown_or_degraded_worker() -> None:
     c = DevCluster()
     w = c.add_worker("w1")
     w.offline = True
-    assert not c.aggregators["z1"].dispatch("ghost", "t1", b"x")
+    assert not c.aggregators["z1"].dispatch("ghost", make_task("t1"))
     c.advance(16)
     assert agg_state(c, "w1") is WorkerState.DEGRADED
-    assert not c.aggregators["z1"].dispatch("w1", "t2", b"x")
+    assert not c.aggregators["z1"].dispatch("w1", make_task("t2"))
+
+
+def test_handler_exception_becomes_failed_result_and_worker_stays_healthy() -> None:
+    c = DevCluster()
+    results = collect(c)
+    w = c.add_worker("w1")
+
+    def boom(task: Task) -> TaskResult:
+        raise RuntimeError("secret detail")
+
+    w.on_task(boom)
+    c.aggregators["z1"].dispatch("w1", make_task("t1"))
+    [(_, result)] = results
+    assert result.status == TASK_STATUS_FAILED
+    assert result.error.code == "handler_error" and not result.error.retryable
+    assert "secret" not in result.error.message  # only the exception type is exposed
+    assert agg_state(c, "w1") is WorkerState.IDLE and w.state is WorkerState.IDLE
+
+
+def test_expired_deadline_is_rejected_without_running() -> None:
+    ran: list[str] = []
+    c = DevCluster()
+    results = collect(c)
+    w = c.add_worker("w1")
+    w.on_task(lambda t: (ran.append(t.task_id), upper(t))[1])
+    c.aggregators["z1"].dispatch("w1", make_task("t1", deadline_ns=1))
+    [(_, result)] = results
+    assert result.status == TASK_STATUS_REJECTED and result.error.code == "deadline_exceeded"
+    assert ran == []
+    assert agg_state(c, "w1") is WorkerState.IDLE and w.state is WorkerState.IDLE
+
+
+def test_worker_without_handler_rejects() -> None:
+    c = DevCluster()
+    results = collect(c)
+    c.add_worker("w1")
+    c.aggregators["z1"].dispatch("w1", make_task("t1"))
+    [(_, result)] = results
+    assert result.status == TASK_STATUS_REJECTED and result.error.code == "no_handler"
+    assert agg_state(c, "w1") is WorkerState.IDLE
+
+
+def test_task_id_must_be_valid_and_unique_in_flight() -> None:
+    c = DevCluster()
+    a = c.add_worker("a")
+    c.add_worker("b")
+    a.offline = True
+    agg = c.aggregators["z1"]
+    with pytest.raises(ValueError):
+        agg.dispatch("a", Task(task_id="bad id!"))
+    agg.dispatch("a", make_task("dup"))
+    with pytest.raises(ValueError):
+        agg.dispatch("b", make_task("dup"))  # same id, different worker, still in flight
+
+
+def test_results_for_tasks_not_in_flight_are_ignored() -> None:
+    c = DevCluster()
+    results = collect(c)
+    w = c.add_worker("w1")
+    assert w.session is not None
+    stray = TaskResult(task_id="nope", status=TASK_STATUS_SUCCEEDED)
+    w.session.publish(agent_subject("z1", "w1", Channel.RESULTS), stray.SerializeToString())
+    assert results == []
+    assert agg_state(c, "w1") is WorkerState.IDLE
+
+
+def test_task_id_reusable_after_completion() -> None:
+    c = DevCluster()
+    w = c.add_worker("w1")
+    w.on_task(upper)
+    agg = c.aggregators["z1"]
+    assert agg.dispatch("w1", make_task("t1", b"a"))
+    assert agg.dispatch("w1", make_task("t1", b"b"))
 
 
 # --- liveness ----------------------------------------------------------------------------
@@ -208,11 +302,11 @@ def test_missed_heartbeats_degrade_then_recover() -> None:
 def test_grace_expiry_fails_in_flight_tasks_and_unregisters() -> None:
     failed: list[tuple[str, str]] = []
     c = DevCluster(grace_period=30)
-    c.aggregators["z1"]._on_task_failed = lambda a, t: failed.append((a, t))
+    c.aggregators["z1"].on_task_failed = lambda a, t: failed.append((a, t))
     w = c.add_worker("w1")
-    w.on_task(lambda *_: b"")
+    w.on_task(upper)
     w.offline = True
-    c.aggregators["z1"].dispatch("w1", "t1", b"x")
+    c.aggregators["z1"].dispatch("w1", make_task("t1", b"x"))
     c.advance(16 + 30)
     assert agg_state(c, "w1") is None
     assert failed == [("w1", "t1")]

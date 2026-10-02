@@ -14,6 +14,7 @@ from a2a_control_plane.identity import Role, SpiffeId
 from a2a_control_plane.registry import Registry
 from a2a_control_plane.state import WorkerEvent, WorkerState, WorkerStateMachine
 from a2a_control_plane.subjects import Channel, Subject, may_publish, may_subscribe, subject_matches
+from a2a_control_plane.tasks import Task, TaskResult, make_task
 from a2a_control_plane.worker import WorkerClient
 
 __all__ = [
@@ -30,11 +31,14 @@ __all__ = [
     "Session",
     "SpiffeId",
     "Subject",
+    "Task",
+    "TaskResult",
     "WorkerClient",
     "WorkerEvent",
     "WorkerState",
     "WorkerStateMachine",
     "may_publish",
+    "make_task",
     "may_subscribe",
     "subject_matches",
 ]

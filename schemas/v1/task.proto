@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package a2a.controlplane.v1;
+
+option go_package = "github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1";
+option java_multiple_files = true;
+option java_package = "io.github.devrbhub.a2acontrolplane.v1";
+option csharp_namespace = "A2A.ControlPlane.V1";
+
+// Task is published by a Regional Aggregator on
+// a2a.zone.<zone_id>.agent.<agent_id>.tasks (spec/03-protocols.md, section 7).
+//
+// The payload is opaque to the control plane. Applications, including bridges to other agent
+// protocols, define its meaning through kind and content_type.
+message Task {
+  // Unique among in-flight tasks in the zone. Token grammar: [A-Za-z0-9_-]{1,64}.
+  string task_id = 1;
+
+  // Application-defined task type or skill name, for example "summarize".
+  string kind = 2;
+
+  // Application payload.
+  bytes payload = 3;
+
+  // Media type of payload, for example "application/json". Empty means unspecified.
+  string content_type = 4;
+
+  // Absolute deadline as Unix time in nanoseconds. 0 means no deadline.
+  uint64 deadline_ns = 5;
+
+  // 1-based delivery attempt; greater than 1 when the Aggregator reassigned the task.
+  uint32 attempt = 6;
+
+  // OpenTelemetry context, same compact binary form as AgentStateDelta.trace_context.
+  bytes trace_context = 7;
+}
+
+// TaskResult is published by a Worker on
+// a2a.zone.<zone_id>.agent.<agent_id>.results, exactly once per received Task.
+message TaskResult {
+  // Correlates with Task.task_id.
+  string task_id = 1;
+
+  TaskStatus status = 2;
+
+  // Application result payload. Empty unless status is TASK_STATUS_SUCCEEDED.
+  bytes payload = 3;
+
+  // Media type of payload.
+  string content_type = 4;
+
+  // Set when status is not TASK_STATUS_SUCCEEDED.
+  TaskError error = 5;
+
+  // Unix time in nanoseconds at which the Worker finished or refused the task.
+  uint64 completed_at_ns = 6;
+
+  // OpenTelemetry context for the result span.
+  bytes trace_context = 7;
+}
+
+enum TaskStatus {
+  TASK_STATUS_UNSPECIFIED = 0;
+  // The task ran to completion.
+  TASK_STATUS_SUCCEEDED = 1;
+  // The task started and failed.
+  TASK_STATUS_FAILED = 2;
+  // The Worker declined the task without running it (overload, expired deadline).
+  TASK_STATUS_REJECTED = 3;
+  // The task was stopped at the request of the Aggregator.
+  TASK_STATUS_CANCELLED = 4;
+}
+
+message TaskError {
+  // Stable machine-readable code, for example "deadline_exceeded" or "handler_error".
+  string code = 1;
+
+  // Human-readable detail. MUST NOT contain secrets.
+  string message = 2;
+
+  // True if the same task MAY succeed when retried or reassigned.
+  bool retryable = 3;
+}

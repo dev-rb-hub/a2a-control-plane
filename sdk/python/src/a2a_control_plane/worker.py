@@ -6,7 +6,9 @@ import time
 from collections.abc import Callable, Mapping
 from typing import Protocol
 
-from a2a_control_plane.aggregator import TASK_ID_HEADER, Aggregator
+from google.protobuf.message import DecodeError
+
+from a2a_control_plane.aggregator import Aggregator
 from a2a_control_plane.bus import TYPE_HEADER, Message, Session
 from a2a_control_plane.delta import (
     AgentStateDelta,
@@ -19,10 +21,11 @@ from a2a_control_plane.identity import SpiffeId
 from a2a_control_plane.registry import challenge_payload
 from a2a_control_plane.state import WorkerEvent, WorkerState, WorkerStateMachine
 from a2a_control_plane.subjects import Channel, agent_subject
+from a2a_control_plane.tasks import RESULT_TYPE, Task, TaskResult, failed, rejected
 
 DELTA_TYPE = "a2a.controlplane.v1.AgentStateDelta"
 
-TaskHandler = Callable[[str, bytes], bytes]  # (task_id, payload) -> result payload
+TaskHandler = Callable[[Task], TaskResult]
 
 
 class Credential(Protocol):
@@ -129,14 +132,33 @@ class WorkerClient:
         return self._last_timestamp_ns
 
     def _on_task(self, message: Message) -> None:
-        task_id = message.headers.get(TASK_ID_HEADER)
-        if self.offline or self._handler is None or task_id is None or self._session is None:
+        if self.offline or self._session is None:
             return
-        self._machine.apply(WorkerEvent.TASK_ACCEPTED)
-        result = self._handler(task_id, message.payload)
+        try:
+            task = Task.FromString(message.payload)
+        except DecodeError:
+            return  # no task_id to answer; the aggregator's liveness tracking covers it
+
+        ran = False
+        if self._handler is None:
+            result = rejected(task, "no_handler")
+        elif task.deadline_ns and time.time_ns() > task.deadline_ns:
+            result = rejected(task, "deadline_exceeded")  # spec 03, 7.2
+        else:
+            ran = True
+            self._machine.apply(WorkerEvent.TASK_ACCEPTED)
+            try:
+                result = self._handler(task)
+            except Exception as error:  # handlers are application code
+                result = failed(task, "handler_error", type(error).__name__)
+            result.task_id = task.task_id
+            if not result.completed_at_ns:
+                result.completed_at_ns = time.time_ns()
+
         self._session.publish(
             agent_subject(self._zone_id, self._agent_id, Channel.RESULTS),
-            result,
-            {TASK_ID_HEADER: task_id},
+            result.SerializeToString(),
+            {TYPE_HEADER: RESULT_TYPE},
         )
-        self._machine.apply(WorkerEvent.TASKS_COMPLETED)
+        if ran:
+            self._machine.apply(WorkerEvent.TASKS_COMPLETED)
