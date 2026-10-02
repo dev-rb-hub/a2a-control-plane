@@ -27,10 +27,10 @@ def main() -> int:
         ["protoc", f"-I{SCHEMAS}", f"--python_out={OUT}", f"--pyi_out={OUT}", *protos]
     )
     for generated in (*OUT.glob("*_pb2.py"), *OUT.glob("*_pb2.pyi")):
-        text = generated.read_text()
+        text = generated.read_bytes().decode()
         fixed = _SIBLING_IMPORT.sub(r"from a2a_control_plane._proto import \1 as \2", text)
         if fixed != text:
-            generated.write_text(fixed)
+            generated.write_bytes(fixed.encode())  # bytes keep LF line endings on Windows
     return code
 
 

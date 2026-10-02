@@ -1,10 +1,11 @@
 # a2a-control-plane
 
-Documentation-only open-standard repository. Contents:
+Open-standard repository with a reference Python SDK. See [AGENTS.md](../AGENTS.md) for architecture, rules and commands, and [CONTRIBUTING.md](../CONTRIBUTING.md) for the workflow. Contents:
 
 - `spec/`: normative specification (RFC 2119 language). `01-identity.md`, `02-topology.md`, `03-protocols.md`.
 - `schemas/v1/`: Protobuf v3 wire schemas. Keep backward compatible; never renumber or retype fields.
 - `reference/`: non-normative deployment examples (Kubernetes manifests).
+- `sdk/python/`: reference SDK. Generated code in `_proto/` comes from `scripts/gen_proto.py`; do not edit it by hand.
 - `GOVERNANCE.md`: RFC change process.
 
 ## Conventions

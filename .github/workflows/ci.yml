@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  sdk-python:
+    name: Python SDK (py${{ matrix.python }}, protobuf ${{ matrix.protobuf }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13", "3.14"]
+        protobuf: ["6"]
+        include:
+          - python: "3.13"
+            protobuf: "7"
+    defaults:
+      run:
+        working-directory: sdk/python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: sdk/python/pyproject.toml
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Use protobuf 7
+        if: matrix.protobuf == '7'
+        run: python -m pip install "protobuf>=7,<8"
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Type check
+        run: mypy src examples
+      - name: Test
+        run: pytest -q
+      - name: Generated code is up to date
+        if: matrix.protobuf == '6' && matrix.python == '3.13'
+        run: |
+          python scripts/gen_proto.py
+          git diff --exit-code -- src/a2a_control_plane/_proto
+      - name: Examples run
+        if: matrix.protobuf == '6'
+        run: |
+          python examples/cluster_demo.py > /dev/null
+          python examples/traffic_benchmark.py > /dev/null

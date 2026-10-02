@@ -20,7 +20,8 @@ classifiers = [
 dependencies = ["protobuf>=6.31", "cryptography>=42"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "grpcio-tools>=1.73", "ruff>=0.6", "mypy>=1.11", "types-protobuf"]
+a2a = ["a2a-sdk>=1.2"]
+dev = ["pytest>=8", "grpcio-tools==1.76.0", "ruff>=0.6", "mypy>=1.11", "types-protobuf", "a2a-sdk>=1.2"]
 
 [project.urls]
 Homepage = "https://github.com/dev-rb-hub/a2a-control-plane"
