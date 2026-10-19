@@ -34,7 +34,7 @@ Tasks, results, control commands and zone reports use the messages in `schemas/v
 ```python
 from a2a_control_plane.bridge import A2AWorkerBridge
 
-bridge = A2AWorkerBridge(my_agent_executor, my_agent_card)   # any a2a-sdk AgentExecutor
+bridge = A2AWorkerBridge(my_agent_executor, my_agent_card)  # any a2a-sdk AgentExecutor
 worker = cluster.add_worker("agent-1", capabilities=bridge.capabilities())
 bridge.attach(worker)
 ```
