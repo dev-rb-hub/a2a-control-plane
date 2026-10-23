@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this standard or SDK, please cite it as below."
+title: "a2a-control-plane: Open Standard for Zero-Trust Agent Control Planes"
+type: software
+authors:
+  - family-names: "Barkhuizen"
+    given-names: "Rendu"
+    alias: "dev-rb-hub"
+license: MIT
+repository-code: "https://github.com/dev-rb-hub/a2a-control-plane"
+version: "0.1.0"
+date-released: "2026-10-23"
+keywords:
+  - multi-agent
+  - control-plane
+  - zero-trust
+  - spiffe

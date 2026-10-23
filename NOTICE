@@ -1,0 +1,14 @@
+a2a-control-plane
+Copyright (c) 2026 Rendu Barkhuizen (dev-rb-hub, MaxiMinion.ai)
+
+The a2a-control-plane specification, schemas, reference material and Python
+SDK were created and first released (version 1) by Rendu Barkhuizen, who is
+the original author and maintainer.
+
+Licensed under the MIT License. See LICENSE.
+
+"a2a-control-plane", "A2A Control Plane" and associated logos are claimed as
+trademarks of Rendu Barkhuizen. The MIT License does not grant trademark
+rights. See TRADEMARKS.md.
+
+Contributions are accepted under the terms in CONTRIBUTING.md.
