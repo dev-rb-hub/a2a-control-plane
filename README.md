@@ -46,7 +46,7 @@ multi-agent systems, agentic AI architecture, agent-to-agent (A2A) protocol, AI 
 
 ## ⚖️ License & Attribution
 
-Released under the [MIT License](LICENSE). Created by **Rendu Barkhuizen** ([@dev-rb-hub](https://github.com/dev-rb-hub), [MaxiMinion.ai](https://maximinion.ai)), who is the original author and maintainer. Please keep the copyright notice and [NOTICE](NOTICE) in copies and derivatives, and cite the project using [CITATION.cff](CITATION.cff).
+Released under the [MIT License](LICENSE). Created by **Rendu Barkhuizen** ([@dev-rb-hub](https://github.com/dev-rb-hub)), who is the original author and maintainer. Please keep the copyright notice and [NOTICE](NOTICE) in copies and derivatives, and cite the project using [CITATION.cff](CITATION.cff).
 
 The names "a2a-control-plane" and "A2A Control Plane" are covered by the [trademark policy](TRADEMARKS.md). Contribution terms are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
