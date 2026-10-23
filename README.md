@@ -44,5 +44,11 @@ To propose an update:
 
 multi-agent systems, agentic AI architecture, agent-to-agent (A2A) protocol, AI agent orchestration, agent control plane, zero-trust networking, SPIFFE, SPIRE, mTLS, NATS, gRPC, Protobuf, Kubernetes NetworkPolicy, distributed systems, open standard, RFC 2119.
 
+## ⚖️ License & Attribution
+
+Released under the [MIT License](LICENSE). Created by **Rendu Barkhuizen** ([@dev-rb-hub](https://github.com/dev-rb-hub)), who is the original author and maintainer. Please keep the copyright notice and [NOTICE](NOTICE) in copies and derivatives, and cite the project using [CITATION.cff](CITATION.cff).
+
+The names "a2a-control-plane" and "A2A Control Plane" are covered by the [trademark policy](TRADEMARKS.md). Contribution terms are in [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ---
-*Maintained by [@dev-rb-hub](https://github.com/dev-rb-hub) and contributors.*
+*Created and maintained by Rendu Barkhuizen ([@dev-rb-hub](https://github.com/dev-rb-hub)) and contributors.*
