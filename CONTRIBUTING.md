@@ -38,8 +38,7 @@ By submitting a contribution (a pull request, patch, or issue text you ask to ha
 
 1. **Origin (Developer Certificate of Origin 1.1).** You wrote it, or have the right to submit it under these terms. Sign off each commit with `git commit -s`, which adds a `Signed-off-by:` line. The full text is at <https://developercertificate.org/>.
 2. **Outbound licence.** Your contribution is released under the repository [LICENSE](LICENSE).
-3. **Relicensing right.** You also grant the Maintainer a perpetual, worldwide, non-exclusive, royalty-free, irrevocable licence to use, reproduce, modify, sublicense and distribute your contribution under any licence, including commercial terms, so that future versions of the project can be licensed differently. You keep your copyright. Versions already published under the MIT License stay available under it.
-4. **Patents.** You grant a licence under any patents you own that your contribution necessarily infringes, for use of the contribution as part of this project.
-5. **Marks.** Contributing does not give you rights in the names in [TRADEMARKS.md](TRADEMARKS.md).
+3. **Patents.** You grant a licence under any patents you own that your contribution necessarily infringes, for use of the contribution as part of this project.
+4. **Marks.** Contributing does not give you rights in the names in [TRADEMARKS.md](TRADEMARKS.md).
 
 If you cannot agree to these terms, do not submit a contribution. Contributions on behalf of an employer need that employer's permission.
