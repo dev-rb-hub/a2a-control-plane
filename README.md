@@ -28,6 +28,9 @@ Current multi-agent frameworks rely heavily on noisy peer-to-peer (P2P) mesh net
     *   [`01-identity`](spec/01-identity.md): SPIFFE/SPIRE identity bootstrapping & mTLS lifecycle.
     *   [`02-topology`](spec/02-topology.md): Regional Aggregator routing and message bus layouts.
     *   [`03-protocols`](spec/03-protocols.md): Wire protocol optimization (Protobuf & Adaptive Heartbeats).
+    *   [`04-control-api`](spec/04-control-api.md): Worker admission, Aggregator attachment, task submission, administration, version negotiation.
+    *   [`05-operations`](spec/05-operations.md): Delivery and recovery, fencing, high availability, limits, reconnection, observability.
+    *   [`06-threat-model`](spec/06-threat-model.md): Adversaries, trust boundaries, and residual risks (informative).
 *   **[`/schemas`](schemas/)**: Official Protobuf (`.proto`) definition files for data exchange.
 *   **[`/reference`](reference/)**: Implementation blueprints including Kubernetes manifests, local test environments, and Harness CD integrations.
 *   **[`/sdk/python`](sdk/python/)**: Reference Python SDK (pre-alpha). The core layer (identity, subjects, worker state machine, adaptive heartbeats, delta streaming) is implemented and tested against the spec.

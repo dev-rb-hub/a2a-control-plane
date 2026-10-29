@@ -10,11 +10,13 @@ implementation sequence.
 1. **Identity and admission — `agent.py`**
    - Bind each Worker to a validated `SpiffeId` in the form
      `spiffe://<trust-domain>/zone/<zone_id>/agent/<agent_id>`.
-   - Implement SVID-backed challenge signing and the proxied registration
+   - Implement SVID-backed challenge signing and the relayed registration
      exchange, including nonce expiry, failure handling, and the initial
-     capability delta.
-   - Follow [spec 01, identity](../../../../../../spec/01-identity.md)
-     (SPIFFE IDs, mTLS, credential rotation, and registration challenge) and
+     capability snapshot.
+   - Follow [spec 04, control API](../../../../../../spec/04-control-api.md)
+     (the registration exchange and the payload to sign),
+     [spec 01, identity](../../../../../../spec/01-identity.md)
+     (SPIFFE IDs, mTLS, credential rotation) and
      [spec 02, topology](../../../../../../spec/02-topology.md)
      (Worker states and transitions T1–T4).
 
@@ -53,7 +55,7 @@ implementation sequence.
 
 | Python placeholder | Planned responsibilities | Specification anchor |
 | --- | --- | --- |
-| `A2AWorkerAgent.register` | Proxied challenge-response admission | spec 01 §6; spec 02 §5 |
+| `A2AWorkerAgent.register` | Relayed challenge-response admission | spec 04 §2; spec 02 §5 |
 | `A2AWorkerAgent.heartbeat_loop` | Adaptive liveness and recovery | spec 03 §6; spec 02 §5 |
 | `A2AWorkerAgent.consume_tasks` | Authorized async task execution and results | spec 02 §§4, 6; spec 03 §7 |
 | `A2ARegionalAggregatorFlow.aggregate_child_telemetry` | Zone-local validation, aggregation, and coalescing | spec 02 §§4, 6; spec 03 §5 |
