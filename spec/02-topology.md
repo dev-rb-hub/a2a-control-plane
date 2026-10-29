@@ -14,7 +14,7 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 | **Central Cluster Registry** (CCR) | The single logical authority for agent identity, admission, and the record of zone membership. Replicated for availability (Primary/Replica). |
 | **Regional Aggregator** (RA) | A per-zone component that terminates Worker connections, relays registration, routes tasks, and aggregates state deltas. A zone runs one or more **instances** that share one SPIFFE ID. |
 | **Worker Agent** (WA) | An agent process that executes tasks. |
-| **Client** | An authenticated, authorized party that submits tasks through the CCR or administers the cluster. |
+| **Client** | An authenticated, authorized party (identity `spiffe://<trust-domain>/client/<client_id>`) that originates tasks or administers the cluster. |
 | **Zone** | A failure and trust domain identified by `zone_id`. Each Worker belongs to exactly one zone. |
 | **Session** | One admitted connection of a Worker to one Aggregator instance, identified by `session_id`. A new connection is a new session. |
 | **Delta** | A message carrying only changed state, as defined in [03-protocols](03-protocols.md). |
@@ -36,6 +36,7 @@ flowchart TB
         W3[Worker Agent]
     end
     CL <--> CCR
+    CL <--> RA1
     RA1 <--> CCR
     RA2 <--> CCR
     W1 <--> RA1
@@ -43,7 +44,7 @@ flowchart TB
     W3 <--> RA2
 ```
 
-The topology is a strict three-tier tree with clients attached to the root. Edges not shown above MUST NOT exist. In particular there is no Worker-to-Worker path and no Worker-to-Registry data path.
+The control hierarchy is a strict three-tier tree: the CCR, the Aggregators and the Workers. Clients are outside it and have two edges. One goes to the CCR, for vouchers and administration. The other goes to an Aggregator instance that a CCR voucher names, for delivering a task. Edges not shown above MUST NOT exist. In particular there is no Worker-to-Worker path, no Worker-to-Registry path, and no Client-to-Worker path.
 
 ## 4. Interaction Boundaries
 
@@ -52,7 +53,7 @@ The topology is a strict three-tier tree with clients attached to the root. Edge
 - The CCR MUST be the sole authority that admits Workers and Aggregators to the cluster ([04-control-api](04-control-api.md) Sections 2 and 3).
 - The CCR MUST maintain the authoritative mapping of `agent_id` to `zone_id`, to capability set, and to owning Aggregator instance. Zone membership is established by the SPIFFE ID that SPIRE issues ([01-identity](01-identity.md) Section 2.1). The CCR's mapping records it. The CCR MUST NOT record a Worker in a zone different from the zone in its SPIFFE ID.
 - The CCR MUST run as one Primary and one or more Replicas and MUST meet the guarantees of [05-operations](05-operations.md) Section 4.1. Only the Primary MAY accept writes. Replicas MUST serve reads and MUST be promotable without changing any identity.
-- The CCR MUST NOT carry task traffic for Workers. It MAY relay a client's task submission and its outcome to an Aggregator ([04-control-api](04-control-api.md) Section 4). In that role it MUST NOT inspect payloads and MUST NOT retain them after the outcome is returned.
+- The CCR MUST NOT carry task payloads or per-task traffic. For task origination it acts only as an authorization and routing referee: it issues a signed voucher that names an Aggregator instance, and the client delivers the task to that instance ([04-control-api](04-control-api.md) Section 4). The CCR sees routing metadata and a digest, never a payload.
 - The CCR MUST communicate only with Regional Aggregators, authorized clients and administrative clients. It MUST NOT accept connections from Worker Agents. A Worker's registration reaches it only as calls made by its Aggregator ([04-control-api](04-control-api.md) Section 2).
 
 ### 4.2 Regional Aggregator
@@ -64,7 +65,8 @@ The topology is a strict three-tier tree with clients attached to the root. Edge
 - An Aggregator MUST dispatch tasks only to Workers in its own zone.
 - An Aggregator MUST forward state to the CCR as batched, coalesced deltas. It MUST NOT forward every Worker heartbeat individually.
 - An Aggregator MUST reject any Worker whose presented identity does not match the zone it serves.
-- An Aggregator MUST NOT originate tasks. Tasks originate from authorized clients through the CCR or from other authorized control components.
+- An Aggregator MUST NOT originate tasks. Tasks originate from authorized clients, which present a CCR voucher to the Aggregator instance it names ([04-control-api](04-control-api.md) Section 4.4), or from other authorized control components inside the Aggregator's own trust boundary.
+- An Aggregator MUST accept a task from a client only if the checks of [04-control-api](04-control-api.md) Section 4.4 pass.
 
 ### 4.3 Worker Agent
 
@@ -83,7 +85,7 @@ The topology is a strict three-tier tree with clients attached to the root. Edge
 | **CCR** | n/a | Y | Y | N | N |
 | **RA** | Y | n/a | N | Y (own zone) | N |
 | **WA** | N | Y | N | N | N |
-| **Client** | Y | N | N | N | n/a |
+| **Client** | Y (vouchers, administration) | Y (voucher holder; any zone a voucher names) | Y (same) | N | n/a |
 
 ## 5. Worker Agent State Machine
 

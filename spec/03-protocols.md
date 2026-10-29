@@ -12,8 +12,9 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHOULD", "SHOULD NOT", "RECOMMEND
 | Hop | Transport | Port |
 |-----|-----------|------|
 | Worker to Aggregator | gRPC (HTTP/2) over mTLS, one long-lived bidirectional stream | 50051 |
-| Aggregator to CCR, CCR to Aggregator | gRPC over mTLS for the `Registration`, `Admin`, `TaskSubmission` and `ZoneControl` services ([04-control-api](04-control-api.md)); zone state reports travel on the regional bus (Section 9) | 50051 |
-| Client to CCR | gRPC over mTLS: `TaskSubmission` and `Admin` | 50051 |
+| Aggregator to CCR, CCR to Aggregator | gRPC over mTLS for the `Registration`, `Admin` and `ZoneControl` services ([04-control-api](04-control-api.md)); zone state reports travel on the regional bus (Section 9) | 50051 |
+| Client to CCR | gRPC over mTLS: `TaskSubmission` (task vouchers) and `Admin` | 50051 |
+| Client to Aggregator | gRPC over mTLS: `TaskIntake`, with a CCR voucher ([04-control-api](04-control-api.md) Section 4) | 50051 |
 | Aggregator regional bus | NATS, subjects defined in [02-topology](02-topology.md) Section 6 | implementation defined |
 
 - Workers MUST NOT connect to the regional bus directly. The Aggregator MUST map each Worker stream to the Worker's subjects ([02-topology](02-topology.md) Section 6.3).
@@ -80,8 +81,9 @@ Tasks and results use the messages in [`schemas/v1/task.proto`](../schemas/v1/ta
 
 - An Aggregator MUST publish a `Task` only on the `tasks` subject of a Worker in its own zone that is eligible. A Worker is eligible when it is `Idle` or `Executing` (see [02-topology](02-topology.md) Section 5.3), holds fewer than the maximum number of in-flight tasks ([05-operations](05-operations.md) Section 5), and advertises every entry of `required_capabilities` with exactly the required value.
 - The Aggregator MUST select the Worker for a task using only `required_capabilities`, the Worker's state and its load. Among eligible Workers the choice is implementation defined; the Aggregator SHOULD prefer the one with the fewest in-flight tasks.
-- If no Worker is eligible, the Aggregator MUST NOT dispatch the task. For a task submitted through the CCR the outcome is `TASK_STATUS_REJECTED` with error code `no_eligible_worker` ([04-control-api](04-control-api.md) Section 4.4).
-- `task_id` MUST satisfy the token grammar of [02-topology](02-topology.md) Section 6.1 and MUST be unique among the in-flight tasks of the cluster; the CCR enforces this for submitted tasks ([04-control-api](04-control-api.md) Section 4.1). An Aggregator MUST NOT dispatch a `task_id` that is already in flight.
+- If no Worker is eligible, the Aggregator MUST NOT dispatch the task. For a task submitted by a client the outcome is `TASK_STATUS_REJECTED` with error code `no_eligible_worker` ([04-control-api](04-control-api.md) Section 4.6).
+- `task_id` MUST satisfy the token grammar of [02-topology](02-topology.md) Section 6.1. For a task submitted by a client the CCR assigns it, and it is unique by construction ([04-control-api](04-control-api.md) Section 4.1). An Aggregator MUST NOT dispatch a `task_id` that is already in flight.
+- An Aggregator MUST accept a task from a client only under a valid CCR voucher ([04-control-api](04-control-api.md) Section 4.4).
 - `attempt` MUST start at 1 and MUST be incremented when the Aggregator reassigns the task.
 - `payload`, `kind`, and `content_type` are opaque to the control plane. Implementations MUST NOT interpret them for routing or authorization decisions.
 

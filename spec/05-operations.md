@@ -24,6 +24,8 @@ Every value below MUST be configurable. Where the table says "default", an imple
 | Maximum message size | 64 KiB | Section 5 |
 | Capabilities per Worker / key length / value length | 64 / 64 characters / 256 bytes | [03-protocols](03-protocols.md) Section 5.2 |
 | Aggregator attachment timeout | 30 s | [04-control-api](04-control-api.md) Section 3 |
+| Task voucher lifetime | 30 s | [04-control-api](04-control-api.md) Section 4.1 |
+| Voucher clock skew tolerance | 5 s | [04-control-api](04-control-api.md) Section 4.4 |
 | Reconnect backoff (initial, factor, maximum) | 1 s, 2, 60 s | Section 6 |
 
 ## 2. State Consistency and Recovery
@@ -106,7 +108,7 @@ Recovery is negotiated at attachment ([04-control-api](04-control-api.md) Sectio
 - A Worker MUST copy `Task.attempt` into `TaskResult.attempt`.
 - The Aggregator MUST ignore, and count, a `TaskResult` whose `task_id` is not in flight, whose sender is not the Worker holding the task, or whose `attempt` differs from the current attempt. This fences out answers from superseded assignments, including those of a Worker that was marked `Degraded` and has recovered.
 - The Aggregator cannot stop a partitioned Worker from continuing to run a task after the task was reassigned. The rule that a task is held by at most one Worker ([03-protocols](03-protocols.md) Section 7.3) therefore governs which result is **accepted**; it does not govern which Workers are running it.
-- A task whose effects must not repeat MUST be made idempotent by the application, using `task_id`, because `worker_lost` and `aggregator_lost` outcomes (and any reassignment) can follow an attempt that ran in part.
+- A task whose effects must not repeat MUST be made idempotent by the application, using `task_id`, because a `worker_lost` outcome, a transport error on the client's call, and any reassignment can follow an attempt that ran in part.
 - Cancellation follows [03-protocols](03-protocols.md) Section 7.4. A result sent for a cancelled task after its `CANCELLED` result is stale and is discarded.
 
 ## 4. High Availability
@@ -136,15 +138,15 @@ Further requirements:
 | # | Guarantee |
 |---|-----------|
 | H1 | A Worker session is owned by exactly one instance. Only that instance dispatches tasks to the Worker or processes its messages. |
-| H2 | A task has one holder (Section 3). `task_id` uniqueness is enforced by the CCR across the cluster ([04-control-api](04-control-api.md) Section 4.1), so instances of a zone cannot hold the same `task_id`. |
+| H2 | A task has one holder (Section 3). The CCR assigns every submitted `task_id` from a secure random source ([04-control-api](04-control-api.md) Section 4.1), and an Aggregator accepts a voucher once and refuses a `task_id` already in flight ([04-control-api](04-control-api.md) Section 4.4), so no two instances can hold the same `task_id`. |
 | H3 | The instance owning a session is recorded by the CCR at admission, and the CCR ignores reports about a Worker from any other instance. |
-| H4 | When an instance is lost, every session it owned ends, and every task in flight on it ends with `aggregator_lost`. Nothing is migrated between instances. |
+| H4 | When an instance is lost, every session it owned ends, and every task in flight on it ends with a transport error on the submitting client's call. The CCR keeps no record of tasks and reports nothing about them. Nothing is migrated between instances. A voucher is void at any other instance, so the clients' vouchers cannot be redirected. |
 
 Further requirements:
 
 - Instances of a zone MAY share a regional bus. They MUST NOT share state that would let two instances act on the same session.
 - How Workers are spread over the instances of a zone is implementation defined. After an instance is lost, its Workers reconnect to another instance with the backoff of Section 6 and register again.
-- A zone with no attached instance accepts no tasks. Submissions to it fail with `no_eligible_worker`.
+- A zone with no attached instance serves no tasks. The CCR issues no voucher for it ([04-control-api](04-control-api.md) Section 4.1).
 
 ## 5. Limits and Backpressure
 
@@ -152,7 +154,7 @@ Further requirements:
 - A Worker MUST NOT send a result that exceeds the limit. A Worker whose result would do so MUST send `TASK_STATUS_FAILED` with error code `result_too_large` and `retryable` false instead.
 - Capability maps are limited as in [03-protocols](03-protocols.md) Section 5.2.
 - An Aggregator MUST NOT dispatch a task to a Worker that already holds the maximum number of in-flight tasks. Such a Worker is not eligible.
-- An implementation SHOULD apply a per-identity limit on messages and registrations, and SHOULD answer `RESOURCE_EXHAUSTED` when it is exceeded.
+- An implementation SHOULD apply a per-identity limit on messages and registrations, and SHOULD answer `RESOURCE_EXHAUSTED` when it is exceeded. An Aggregator SHOULD likewise bound the number of vouchers it remembers ([04-control-api](04-control-api.md) Section 4.4) and the submissions per client, and a CCR SHOULD limit the voucher requests per client.
 - An Aggregator SHOULD limit the registrations in progress at one time, so that a restart of many Workers does not exhaust it.
 - By default a task that has no eligible Worker is rejected, not queued. An implementation MAY queue it until its deadline. A queued task MUST remain subject to every rule of [03-protocols](03-protocols.md) Section 7.
 
@@ -173,6 +175,8 @@ An implementation MUST write an audit record for each of the following events an
 - admission of a Worker, and rejection of a registration (with the failure class, but without making it available to the caller);
 - revocation of an identity, with the requester and the reason;
 - attachment, detachment and loss of an Aggregator instance;
+- issue of a task voucher (the `voucher_id`, the client, the instance and the digest, but never a payload) and refusal of a request, with the failure class;
+- refusal of a submission at an Aggregator, with the failed check of [04-control-api](04-control-api.md) Section 4.4;
 - a snapshot requested by the CCR, with the cause;
 - an authorization denial on the bus or on a service.
 
@@ -187,6 +191,7 @@ An implementation SHOULD expose the following counters and gauges, labelled by `
 | `a2a_cp_resyncs_total{hop}` | counter | Recoveries started, for the hop `worker` or `ccr`. |
 | `a2a_cp_results_fenced_total` | counter | Results ignored under Section 3. |
 | `a2a_cp_registrations_total{outcome}` | counter | Registrations, by `admitted` or `rejected`. |
+| `a2a_cp_vouchers_total{outcome}` | counter | Voucher requests at the CCR, by `issued` or `refused`; and submissions at an Aggregator, by `accepted` or `refused`. |
 | `a2a_cp_workers{state}` | gauge | Workers per state. |
 | `a2a_cp_tasks_in_flight` | gauge | Tasks in flight. |
 | `a2a_cp_tasks_total{status}` | counter | Final task outcomes. |

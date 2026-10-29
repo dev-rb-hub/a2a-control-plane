@@ -5,10 +5,14 @@
 #     path, so a compromised Worker cannot move laterally.
 #   - Aggregators live in their own namespace and are the sole ingress source for Workers.
 #   - Workers never initiate connections to the Registry or to anything else.
+#   - Clients reach the Registry (for task vouchers, never payloads) and the Aggregators
+#     (for task submission, with a Registry voucher). They never reach Workers.
 #
 # Assumptions (adjust to your cluster):
 #   - Workers run in namespace "a2a-workers" with label role=a2a-worker.
 #   - Aggregators run in namespace "a2a-aggregators" with label role=a2a-aggregator.
+#   - The Registry runs in namespace "a2a-registry" with label role=a2a-registry.
+#   - Clients run in namespace "a2a-clients" with label role=a2a-client.
 #   - The CNI plugin enforces NetworkPolicy (for example Calico or Cilium).
 #   - gRPC port is 50051 (spec/03-protocols.md, Section 2).
 #
@@ -97,3 +101,73 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+---
+# 4. Aggregator ingress: Workers (their only path), the Registry (snapshots, revocation) and
+#    Clients (task submission with a Registry voucher), all on 50051/TCP. Everything else is
+#    denied, including Aggregators of other zones. Each "from" item ANDs its namespace and pod
+#    selectors, as in policy 2.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: a2a-aggregator-allow-ingress
+  namespace: a2a-aggregators
+spec:
+  podSelector:
+    matchLabels:
+      role: a2a-aggregator
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: a2a-workers
+          podSelector:
+            matchLabels:
+              role: a2a-worker
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: a2a-registry
+          podSelector:
+            matchLabels:
+              role: a2a-registry
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: a2a-clients
+          podSelector:
+            matchLabels:
+              role: a2a-client
+      ports:
+        - protocol: TCP
+          port: 50051
+---
+# 5. Registry ingress: Aggregators (attachment, registration relay) and Clients (task vouchers
+#    and administration). Workers are not listed, so they cannot reach the Registry.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: a2a-registry-allow-ingress
+  namespace: a2a-registry
+spec:
+  podSelector:
+    matchLabels:
+      role: a2a-registry
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: a2a-aggregators
+          podSelector:
+            matchLabels:
+              role: a2a-aggregator
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: a2a-clients
+          podSelector:
+            matchLabels:
+              role: a2a-client
+      ports:
+        - protocol: TCP
+          port: 50051

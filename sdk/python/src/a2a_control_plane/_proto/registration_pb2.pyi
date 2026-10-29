@@ -79,14 +79,16 @@ class RegistrationAdmission(_message.Message):
     def __init__(self, session_id: _Optional[str] = ..., selected_version: _Optional[int] = ..., selected_features: _Optional[_Iterable[str]] = ..., admitted_capabilities: _Optional[_Mapping[str, str]] = ...) -> None: ...
 
 class AttachRequest(_message.Message):
-    __slots__ = ("instance_id", "supported_versions", "features")
+    __slots__ = ("instance_id", "supported_versions", "features", "endpoint")
     INSTANCE_ID_FIELD_NUMBER: _ClassVar[int]
     SUPPORTED_VERSIONS_FIELD_NUMBER: _ClassVar[int]
     FEATURES_FIELD_NUMBER: _ClassVar[int]
+    ENDPOINT_FIELD_NUMBER: _ClassVar[int]
     instance_id: str
     supported_versions: _containers.RepeatedScalarFieldContainer[int]
     features: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, instance_id: _Optional[str] = ..., supported_versions: _Optional[_Iterable[int]] = ..., features: _Optional[_Iterable[str]] = ...) -> None: ...
+    endpoint: str
+    def __init__(self, instance_id: _Optional[str] = ..., supported_versions: _Optional[_Iterable[int]] = ..., features: _Optional[_Iterable[str]] = ..., endpoint: _Optional[str] = ...) -> None: ...
 
 class AttachResponse(_message.Message):
     __slots__ = ("epoch", "selected_version", "selected_features")

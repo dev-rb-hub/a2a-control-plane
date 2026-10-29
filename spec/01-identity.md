@@ -9,7 +9,7 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHOULD", "SHOULD NOT", "RECOMMEND
 
 ## 2. Identity Model
 
-Every participant (Registry, Aggregator, Worker) MUST hold a [SPIFFE] identity delivered as an X.509-SVID. Implementations SHOULD use [SPIRE] as the SPIFFE implementation.
+Every participant (Registry, Aggregator, Worker, Client) MUST hold a [SPIFFE] identity delivered as an X.509-SVID. Implementations SHOULD use [SPIRE] as the SPIFFE implementation.
 
 ### 2.1 SPIFFE ID Format
 
@@ -18,8 +18,9 @@ Every participant (Registry, Aggregator, Worker) MUST hold a [SPIFFE] identity d
 | Central Cluster Registry | `spiffe://<trust-domain>/registry` |
 | Regional Aggregator | `spiffe://<trust-domain>/zone/<zone_id>/aggregator` |
 | Worker Agent | `spiffe://<trust-domain>/zone/<zone_id>/agent/<agent_id>` |
+| Client | `spiffe://<trust-domain>/client/<client_id>` |
 
-- `zone_id` and `agent_id` MUST satisfy the token grammar in [02-topology](02-topology.md) Section 6.1.
+- `zone_id`, `agent_id` and `client_id` MUST satisfy the token grammar in [02-topology](02-topology.md) Section 6.1.
 - A single trust domain MUST be used per cluster. Federation between clusters is out of scope for this version.
 - An `agent_id` MUST be unique within the trust domain.
 - The zone of a Worker or Aggregator is fixed by its SPIFFE ID, which SPIRE issues from the registration entry. The CCR records the zone ([02-topology](02-topology.md) Section 4.1); it does not assign a different one.
@@ -29,7 +30,7 @@ Every participant (Registry, Aggregator, Worker) MUST hold a [SPIFFE] identity d
 
 - Workers MUST be attested by the node or workload attestor of the local SPIRE agent before receiving an SVID.
 - Registration entries for Workers MUST be created by the CCR operator or an automated controller with CCR authorization. Workers MUST NOT be able to create their own entries.
-- Registration entries for Aggregators MUST be created only by the CCR operator or an automated controller with CCR authorization, and a zone MUST be provisioned at the CCR before an Aggregator of that zone can attach.
+- Registration entries for Aggregators and Clients MUST be created only by the CCR operator or an automated controller with CCR authorization, and a zone MUST be provisioned at the CCR before an Aggregator of that zone can attach. Possession of a Client identity grants nothing by itself: the CCR's authorization policy decides what a client may request ([04-control-api](04-control-api.md) Section 4.1).
 - Attestation selectors SHOULD bind the SPIFFE ID to infrastructure properties (for example namespace and service account on Kubernetes).
 
 ## 4. Mutual TLS
@@ -39,6 +40,7 @@ Every participant (Registry, Aggregator, Worker) MUST hold a [SPIFFE] identity d
 - Peers MUST validate the peer's certificate chain against the trust bundle and MUST validate the peer's SPIFFE ID against the expected role and zone for that connection.
 - An Aggregator MUST reject a Worker whose SPIFFE ID zone component differs from the Aggregator's own zone.
 - The CCR MUST reject an Aggregator whose SPIFFE ID does not have the Aggregator form or whose zone has not been provisioned.
+- An Aggregator MUST accept a task submission only from a peer whose SPIFFE ID has the Client form and the Aggregator's trust domain, and MUST compare the voucher's client identity with that SPIFFE ID ([04-control-api](04-control-api.md) Section 4.4).
 - Authorization decisions MUST be based on the SPIFFE ID in the URI SAN, not on the certificate subject or any client-supplied field.
 
 ## 5. Credential Lifecycle

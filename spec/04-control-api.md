@@ -1,7 +1,7 @@
 # a2a-control-plane Specification 04: Control API
 
 **Status:** Draft v0.1.0  
-**Scope:** Worker admission, Aggregator attachment, task origination, administration, version and feature negotiation, and the error model.
+**Scope:** Worker admission, Aggregator attachment, task origination by voucher, administration, version and feature negotiation, and the error model.
 
 ## 1. Conventions
 
@@ -13,8 +13,9 @@ The messages are defined in [`schemas/v1/registration.proto`](../schemas/v1/regi
 |---------|-----------|-----------|---------|
 | `Registration` | CCR | Aggregator | Attach an Aggregator instance; relay a Worker's admission. |
 | `Admin` | CCR | Administrative client | Revoke an identity; list Workers. |
-| `TaskSubmission` | CCR | Authorized client | Submit and cancel tasks. |
-| `ZoneControl` | Aggregator instance | CCR | Dispatch, cancel, snapshot, revoke. |
+| `TaskSubmission` | CCR | Authorized client | Obtain a task voucher. No payload. |
+| `TaskIntake` | Aggregator instance | Client holding a voucher | Submit a task; cancel it. |
+| `ZoneControl` | Aggregator instance | CCR | Snapshot, revoke a Worker. |
 
 ## 2. Worker Admission
 
@@ -113,47 +114,108 @@ An Aggregator instance joins the cluster by calling `Registration.Attach`.
 - After a successful `Attach` the instance MUST send a snapshot report ([05-operations](05-operations.md) Section 2.3) as its first report, and MUST stamp `instance_id` and `epoch` on every report.
 - An attach by an `instance_id` that is already attached replaces the earlier attachment. Before granting the new epoch the CCR MUST end the earlier attachment as described below, and MUST instruct the superseded instance, if it is still reachable, to end every Worker session it holds (`ZoneControl.RevokeWorker`). The superseded epoch is stale ([05-operations](05-operations.md) Section 4.2).
 - An attachment ends when the instance calls `Detach`, when its identity is revoked, when it is replaced, or when the CCR cannot reach the instance's `ZoneControl` service for the attachment timeout (default 30 seconds). The CCR SHOULD use the gRPC health checking protocol for the last case.
-- When an attachment ends, the CCR MUST remove the Worker records the instance owned and MUST fail the tasks in flight on it with error code `aggregator_lost` (Section 4.4).
+- When an attachment ends, the CCR MUST remove the Worker records the instance owned. Tasks in flight on the instance end with a transport error on the clients' calls to it (Section 4.5).
+- An instance MUST advertise, in `AttachRequest.endpoint`, the address at which clients reach its `TaskIntake` service. The CCR hands it to clients with a voucher, and MUST NOT choose an instance that advertised none.
 
 ## 4. Task Origination
 
-### 4.1 Submission
+The CCR is an authorization and routing referee. It never receives a task payload. A client asks the CCR for a signed **task voucher**; the voucher names one Aggregator instance and is bound to one client and one task. The client then delivers the task, with the voucher, directly to that instance.
 
-An authorized client submits a task with `TaskSubmission.SubmitTask`. The CCR relays the submission to a zone Aggregator and returns the final outcome on the same call.
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant R as CCR (referee)
+    participant A as Aggregator instance
+    participant W as Worker
+    C->>R: IssueTaskVoucher(required_capabilities, task_digest)
+    R->>R: authorize client, choose instance, assign task_id, sign voucher
+    R-->>C: voucher, task_id, endpoint
+    C->>A: SubmitTask(voucher, task) over mTLS
+    A->>A: verify signature, client, instance, epoch, expiry, digest, single use
+    A->>W: task
+    W-->>A: result
+    A-->>C: TaskResult (final outcome, on the same call)
+```
 
-- The client MUST authenticate over mTLS, and the CCR MUST authorize it against a policy that is deployment defined. Authorization decisions MUST use the client's authenticated identity and MUST NOT use any field of the task.
-- `Task.task_id` is chosen by the client and MUST satisfy the token grammar of [02-topology](02-topology.md) Section 6.1. The CCR MUST reject a `task_id` that is already in flight in the cluster with `ALREADY_EXISTS`. A `task_id` MAY be reused after its outcome was returned.
-- `Task.attempt` MUST be 1 or unset. The Aggregator owns it afterwards ([03-protocols](03-protocols.md) Section 7.1). The CCR MUST reject a larger value with `INVALID_ARGUMENT`.
-- If `deadline_ns` has already passed, the CCR MUST answer with `TASK_STATUS_REJECTED` and error code `deadline_exceeded`, and MUST NOT dispatch the task.
-- If `zone_id` is set, the CCR MUST offer the task only to that zone. If it is empty, the CCR chooses the zone; the order in which zones are tried is implementation defined.
-- The CCR relays the task to an attached instance with `ZoneControl.Dispatch`. If the instance has no eligible Worker ([03-protocols](03-protocols.md) Section 7.1), the CCR MAY try another instance or zone. If none accepts, the CCR MUST answer with `TASK_STATUS_REJECTED`, error code `no_eligible_worker` and `retryable` set.
-- The CCR MUST NOT interpret `payload`, `kind` or `content_type`, MUST NOT keep a task or its result after the outcome has been returned, and MUST NOT log payloads.
+### 4.1 Voucher Issuance
 
-The CCR is a relay in this path and is the only component besides the Aggregator that sees task payloads. The Worker's data path never includes the CCR ([02-topology](02-topology.md) Section 4.1).
+A client requests a voucher with `TaskSubmission.IssueTaskVoucher`. The request carries routing metadata (`required_capabilities`, optionally `zone_id`) and `task_digest` (Section 4.2). It MUST NOT carry the payload.
 
-### 4.2 Outcome
+- The client MUST authenticate over mTLS with an identity of the form `spiffe://<trust-domain>/client/<client_id>` ([01-identity](01-identity.md) Section 2.1). The CCR MUST authorize the client against a policy that is deployment defined and MUST deny the request when no policy is configured. The policy MAY consider the client's identity and `required_capabilities`. It MUST NOT depend on anything the client asserts about itself.
+- `task_digest` MUST be a SHA-256 digest (32 bytes). `required_capabilities` MUST satisfy [03-protocols](03-protocols.md) Section 5.2. The CCR MUST reject anything else with `INVALID_ARGUMENT`.
+- The CCR MUST choose an attached Aggregator instance that, according to its records, serves at least one Worker that is `Idle` or `Executing` and advertises every entry of `required_capabilities`. If `zone_id` is set it MUST consider only that zone. Among suitable instances the choice is implementation defined; the CCR SHOULD prefer the instance that serves the most matching Workers.
+- If there is no suitable instance, the CCR MUST fail the request with `UNAVAILABLE` and the reason `no_eligible_worker`. The CCR's records are eventually consistent ([05-operations](05-operations.md) Section 2), so a voucher does not guarantee that a Worker is free: the Aggregator decides (Section 4.4).
+- The CCR MUST assign `task_id`, MUST generate it from a cryptographically secure source with at least 128 bits of randomness, and MUST encode it in the token grammar of [02-topology](02-topology.md) Section 6.1. Clients do not choose task ids, so ids are unique by construction and the CCR needs no record of tasks in flight.
+- The CCR MUST set `voucher_id` to 128 random bits, MUST set the voucher's lifetime (`expires_at_ns` minus `issued_at_ns`) to the voucher lifetime of [05-operations](05-operations.md) Section 1.1 (default 30 seconds), and MUST record the instance's `instance_id` and the epoch it granted.
+- Only the Primary MAY issue vouchers.
 
-- The call returns exactly one `TaskResult` that is the task's final outcome: the result that completed the task, or a failure produced under Section 4.4. Results that led to a reassignment are not returned ([03-protocols](03-protocols.md) Section 7.3).
-- A client that stops waiting does not cancel the task. It MUST use `CancelTask`.
+The response contains the signed voucher, the `task_id` and the instance's `endpoint`. The CCR sees routing metadata and a digest. It does not see the payload, `kind` or `content_type`.
 
-### 4.3 Cancellation
+### 4.2 Task Digest
 
-`TaskSubmission.CancelTask` asks the CCR to cancel an in-flight task. The CCR relays it with `ZoneControl.Cancel`. The response states whether a cancellation was requested for a task that was in flight; the outcome still arrives on the original `SubmitTask` call, normally as `TASK_STATUS_CANCELLED` ([03-protocols](03-protocols.md) Section 7.4).
+The client computes `task_digest` before it has a `task_id`. It is the SHA-256 of the length-prefixed concatenation ([2.3](#23-challenge-payload) describes the encoding) of these fields in this order:
 
-### 4.4 Errors Produced by the Control Plane
+| # | Field | Encoding |
+|---|-------|----------|
+| 1 | label | The ASCII bytes `a2a-cp/v1/task`. |
+| 2 | `kind` | UTF-8. |
+| 3 | `content_type` | UTF-8. |
+| 4 | `payload` | The bytes. |
+| 5 | `deadline_ns` | 8 bytes, big-endian. |
+| 6 | capability count | 4 bytes, big-endian: the number of entries in `required_capabilities`. |
+| 7 | capabilities | For each entry in ascending order of key (bytewise), the key then the value, each as UTF-8 and each as its own length-prefixed field. |
+
+The digest covers everything the client controls. It excludes `task_id` and `attempt`, which the control plane assigns, and `trace_context`, which does not change what the task means. Because it binds the voucher to one task, a voucher cannot be reused for a different task.
+
+### 4.3 Voucher and Signature
+
+`SignedTaskVoucher.voucher` is the serialized `TaskVoucher`. The CCR signs the following byte string with the private key of its X.509-SVID, using the encoding of [Section 2.3](#23-challenge-payload): the label `a2a-cp/v1/voucher` and the exact bytes of `voucher`, each length-prefixed. The signature covers the bytes that were serialized, so no canonical form of the message is needed.
+
+- `SignedTaskVoucher.signer_chain` MUST carry the CCR's X.509-SVID chain (DER, leaf first). A verifier MUST validate it against its trust bundle, MUST check that the leaf's URI SAN is `spiffe://<trust-domain>/registry`, and only then MUST verify the signature with the leaf's public key. A trust bundle holds the roots of trust, not the CCR's own key, so the chain is how a verifier obtains it.
+- The signature algorithm is the one of the SVID's key. Implementations MUST support ECDSA P-256 and Ed25519.
+- Because SVIDs are short lived ([01-identity](01-identity.md) Section 5), the voucher lifetime MUST NOT exceed the remaining lifetime of the SVID that signed it.
+
+### 4.4 Aggregator Intake
+
+The client calls `TaskIntake.SubmitTask` on the instance named in the voucher, over mTLS. The call carries the voucher and the `Task`; its `task_id` MUST equal the voucher's. The client MUST check that the Aggregator's SPIFFE ID is the Aggregator form of the voucher's zone.
+
+The Aggregator MUST accept a submission only if every check passes, and MUST reject it otherwise without dispatching anything:
+
+1. The caller's authenticated identity is a client of the Aggregator's trust domain.
+2. The voucher's signature verifies against a chain that satisfies Section 4.3.
+3. `client_spiffe_id` equals the caller's authenticated identity. A voucher is not a bearer token: it is of no use to anyone but the client it was issued to.
+4. `zone_id`, `instance_id` and `epoch` equal this instance's own. A voucher is void at any other instance and at any other epoch of the same instance, so a restart invalidates the vouchers it had outstanding.
+5. The current time is not before `issued_at_ns` and not after `expires_at_ns`, allowing the clock skew tolerance of [05-operations](05-operations.md) Section 1.1 (default 5 seconds) on each side.
+6. The task's `task_id` equals the voucher's, its `attempt` is 1 or unset, and the digest of the task, computed as in Section 4.2, equals `task_digest`.
+7. The `task_id` is not already in flight, and `voucher_id` has not been accepted before. The Aggregator MUST remember each accepted `voucher_id` until its expiry plus the skew tolerance, so that a voucher is accepted once.
+8. The whole message, including the voucher and its signer chain, is within the size limit ([05-operations](05-operations.md) Section 5), checked before the content is parsed.
+
+A rejection caused by checks 1 to 5, 7 or the replay of a voucher is `PERMISSION_DENIED` ([Section 7](#7-error-model)); a malformed task is `INVALID_ARGUMENT`. A rejected submission does not consume the voucher, unless the voucher itself was already used.
+
+After the checks the Aggregator selects a Worker as in [03-protocols](03-protocols.md) Section 7.1. If `deadline_ns` has passed, the outcome is `TASK_STATUS_REJECTED` with error code `deadline_exceeded` and `retryable` unset. If no Worker is eligible, which can happen because the CCR's records lag, the outcome is `TASK_STATUS_REJECTED` with error code `no_eligible_worker` and `retryable` set. The client then MAY request a new voucher.
+
+The Aggregator MUST NOT dispatch a task for any other reason, and MUST NOT dispatch a task it received without a voucher, except from a control component inside its own trust boundary ([03-protocols](03-protocols.md) Section 7.1).
+
+### 4.5 Outcome and Cancellation
+
+- `SubmitTask` completes with exactly one `TaskResult`, the task's final outcome: the result that completed the task, or a failure produced under Section 4.6. Results that led to a reassignment are not returned ([03-protocols](03-protocols.md) Section 7.3).
+- The Aggregator keeps running a task whose client has disconnected. A client that stops waiting does not cancel the task; it MUST call `TaskIntake.CancelTask`.
+- `CancelTask` asks the instance to cancel a task in flight. Only the client that submitted the task MAY cancel it. For any other caller, and for an unknown or finished task, the response MUST be `accepted` false, so that an unauthorized caller cannot learn whether a task exists. The outcome still arrives on the original `SubmitTask` call, normally as `TASK_STATUS_CANCELLED` ([03-protocols](03-protocols.md) Section 7.4).
+- If the instance fails or the connection breaks, the client sees a transport error (`UNAVAILABLE`) on its call. The client cannot tell whether the task ran. The CCR does not track tasks and does not report on them. A client that resubmits MUST request a new voucher, and a task whose effects must not repeat MUST be idempotent ([05-operations](05-operations.md) Section 3).
+
+### 4.6 Errors Produced by the Control Plane
 
 When the control plane, rather than a Worker, ends a task, it MUST use these codes:
 
 | `TaskError.code` | Status | `retryable` | Produced when |
 |------------------|--------|-------------|---------------|
 | `deadline_exceeded` | `REJECTED` | false | The deadline had passed before dispatch or on receipt. |
-| `no_eligible_worker` | `REJECTED` | true | No Worker satisfied Section 4.1. |
+| `no_eligible_worker` | `REJECTED` | true | No Worker was eligible when the Aggregator received the task. |
 | `worker_lost` | `FAILED` | true | The Worker holding the task was lost and the task could not be reassigned. |
-| `aggregator_lost` | `FAILED` | true | The Aggregator instance holding the task was lost. |
 | `cancelled` | `CANCELLED` | false | The Worker stopped the task on request. |
 | `result_too_large` | `FAILED` | false | The Worker's result exceeded the size limit. |
 
-`retryable` is a hint to the originator. An originator that resubmits after `worker_lost` or `aggregator_lost` MUST accept that the earlier attempt may have run in part ([05-operations](05-operations.md) Section 3).
+`retryable` is a hint to the originator. An originator that resubmits after `worker_lost`, or after a transport error, MUST accept that the earlier attempt may have run in part ([05-operations](05-operations.md) Section 3).
 
 ## 5. Version and Feature Negotiation
 
@@ -189,22 +251,24 @@ Calls on the services return gRPC status codes with these meanings. An implement
 
 | Status | Used for |
 |--------|----------|
-| `INVALID_ARGUMENT` | A malformed message, an invalid `task_id`, a `attempt` greater than 1, a size or capability limit exceeded. |
-| `ALREADY_EXISTS` | A `task_id` already in flight. |
-| `NOT_FOUND` | A `CancelTask` or administrative lookup for an unknown task or identity, where the response has no `found` field. |
-| `PERMISSION_DENIED` | The caller is not authorized, or a Worker registration failed (Section 2.4). |
+| `INVALID_ARGUMENT` | A malformed message, an invalid `task_digest` or capability map, a `task_id` that does not match the voucher, an `attempt` greater than 1, a size or capability limit exceeded. |
+| `ALREADY_EXISTS` | A `task_id` already in flight at the Aggregator. |
+| `NOT_FOUND` | An administrative lookup for an unknown identity, where the response has no `found` field. |
+| `PERMISSION_DENIED` | The caller is not authorized; a Worker registration failed (Section 2.4); a voucher failed a check of Section 4.4 or was already used. |
 | `FAILED_PRECONDITION` | No common version; an instance that is not attached; a write sent to a CCR that is not the Primary. |
-| `UNAVAILABLE` | No Primary is reachable, or the CCR cannot reach any instance of the zone. The caller SHOULD retry with the backoff of [05-operations](05-operations.md) Section 6. |
+| `UNAVAILABLE` | No Primary is reachable; no Aggregator instance serves a matching Worker (reason `no_eligible_worker`, Section 4.1); an Aggregator instance is unreachable or failed during a call. The caller SHOULD retry with the backoff of [05-operations](05-operations.md) Section 6. |
 | `RESOURCE_EXHAUSTED` | A rate or concurrency limit ([05-operations](05-operations.md) Section 5). |
 
-Errors produced for a task are carried in `TaskResult`, not as a status (Section 4.4). A `SubmitTask` call that reaches a Worker's outcome returns status `OK` even when the task failed.
+Errors produced for a task are carried in `TaskResult`, not as a status (Section 4.6). A `SubmitTask` call that reaches a Worker's outcome returns status `OK` even when the task failed.
 
 ## 8. Security Considerations
 
 - The registration exchange tolerates an untrusted relay: the Aggregator can drop or delay messages and can refuse to relay, but it cannot admit a Worker, cannot alter a request undetected, and cannot reuse a signature on another connection.
 - A compromised Aggregator can still lie about what it observed on the Worker's connection. The CCR therefore validates the SVID chain itself and binds the admission to the Worker's SPIFFE ID, and does not rely on the Aggregator's assertion of identity alone. See [06-threat-model](06-threat-model.md).
 - Uniform `PERMISSION_DENIED` responses prevent the exchange from being used to probe which identities or capabilities exist.
-- The CCR's role in task submission makes it a high-value target for payload exposure. Deployments that cannot accept this SHOULD encrypt payloads end to end at the application layer, since the control plane treats payloads as opaque.
+- A voucher is a capability, so it is constrained on every axis a thief or a replay could use: it is bound to one client identity, one Aggregator instance and epoch, one task digest and one lifetime, and it is accepted once. Stealing a voucher is of no use without the client's credential, and a leaked one cannot carry a different task.
+- The CCR sees routing metadata and a digest, never a payload. It can still decide which tasks may be sent and where, so a compromised CCR can authorize work it should not; it cannot read or alter the tasks themselves. Payload confidentiality from the Aggregator needs end-to-end encryption at the application layer, since the control plane treats payloads as opaque.
+- A voucher check depends on wall-clock time. The skew tolerance bounds the window in which a clock fault could let an expired voucher through or reject a valid one.
 
 [RFC 2119]: https://www.rfc-editor.org/rfc/rfc2119
 [RFC 8174]: https://www.rfc-editor.org/rfc/rfc8174

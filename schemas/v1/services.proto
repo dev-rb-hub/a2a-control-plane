@@ -30,8 +30,13 @@ service Admin {
   rpc ListWorkers(ListWorkersRequest) returns (ListWorkersResponse);
 }
 
-// Served by the CCR to authorized clients that originate tasks.
+// Served by the CCR to authorized clients. The CCR issues vouchers; it never receives payloads.
 service TaskSubmission {
+  rpc IssueTaskVoucher(IssueTaskVoucherRequest) returns (IssueTaskVoucherResponse);
+}
+
+// Served by each Aggregator instance to clients that hold a voucher.
+service TaskIntake {
   // Completes when the task reaches its final outcome (spec/03-protocols.md, section 7.3).
   rpc SubmitTask(SubmitTaskRequest) returns (TaskResult);
   rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse);
@@ -39,8 +44,6 @@ service TaskSubmission {
 
 // Served by each Aggregator instance to the CCR.
 service ZoneControl {
-  rpc Dispatch(SubmitTaskRequest) returns (TaskResult);
-  rpc Cancel(CancelTaskRequest) returns (CancelTaskResponse);
   rpc RequestZoneSnapshot(ZoneSnapshotRequest) returns (ZoneStateReport);
   rpc RevokeWorker(RevokeRequest) returns (RevokeResponse);
 }

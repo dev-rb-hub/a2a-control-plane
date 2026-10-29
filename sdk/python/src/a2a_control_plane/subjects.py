@@ -126,7 +126,9 @@ def may_subscribe(identity: SpiffeId, pattern: str) -> bool:
             and tokens[5] in (Channel.STATE, Channel.RESULTS)
         )
 
-    return pattern in (REGISTRY_AGGREGATOR_STATE_PATTERN, REGISTRY_DIAGNOSTIC_PATTERN)
+    if identity.role is Role.REGISTRY:
+        return pattern in (REGISTRY_AGGREGATOR_STATE_PATTERN, REGISTRY_DIAGNOSTIC_PATTERN)
+    return False  # clients never use the regional bus
 
 
 def may_publish(identity: SpiffeId, subject: str) -> bool:

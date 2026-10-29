@@ -1,8 +1,10 @@
 """Central Cluster Registry role (spec 02, sections 4.1 and 5; spec 01, section 6; spec 04).
 
-The CCR is the root of trust for admission. Aggregators relay the registration exchange but never
-issue or judge a challenge. The calls below are the in-process form of the ``Registration``,
-``Admin`` and ``TaskSubmission`` services in ``schemas/v1/services.proto``. Zone state arrives as
+The CCR is the root of trust for admission and an authorization and routing referee for tasks.
+Aggregators relay the registration exchange but never issue or judge a challenge, and clients get a
+signed voucher from the CCR but deliver their tasks to an Aggregator, so no payload passes through
+here. The calls below are the in-process form of the ``Registration``, ``Admin`` and
+``TaskSubmission`` services in ``schemas/v1/services.proto``. Zone state arrives as
 ``ZoneStateReport`` messages on the regional bus (spec 03, section 9).
 """
 
@@ -10,10 +12,9 @@ from __future__ import annotations
 
 import hashlib
 import secrets
-import struct
 import time
 import uuid
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -27,8 +28,15 @@ from a2a_control_plane._proto.registration_pb2 import (
     RegistrationAdmission,
     RegistrationChallenge,
 )
+from a2a_control_plane._proto.submission_pb2 import IssueTaskVoucherResponse
 from a2a_control_plane.bus import MAX_MESSAGE_BYTES, InMemoryBus, Message
-from a2a_control_plane.delta import AgentStateView, CapabilityPolicy, validate_capabilities
+from a2a_control_plane.delta import (
+    AgentStateView,
+    CapabilityPolicy,
+    capabilities_match,
+    validate_capabilities,
+)
+from a2a_control_plane.framing import length_prefixed
 from a2a_control_plane.identity import Role, SpiffeId
 from a2a_control_plane.reports import (
     WorkerStateChange,
@@ -37,19 +45,31 @@ from a2a_control_plane.reports import (
 )
 from a2a_control_plane.state import WorkerState
 from a2a_control_plane.subjects import REGISTRY_AGGREGATOR_STATE_PATTERN, Subject
-from a2a_control_plane.tasks import Task, TaskResult, failed, rejected
-from a2a_control_plane.tokens import validate_token
+from a2a_control_plane.voucher import TaskVoucher, sign_voucher
 
 PublicKeyLookup = Callable[[SpiffeId], Ed25519PublicKey | None]
 CapabilityAdmission = Callable[[SpiffeId, Mapping[str, str]], bool]
-ResultCallback = Callable[[TaskResult], None]
+# (client, required_capabilities) -> may this client originate such tasks?
+ClientAuthorizer = Callable[[SpiffeId, Mapping[str, str]], bool]
 
 PROTOCOL_VERSIONS: tuple[int, ...] = (1,)
 FEATURE_SNAPSHOT = "recovery.snapshot"  # REQUIRED of every implementation (spec 05, section 2)
 FEATURE_REPLAY = "recovery.replay"  # optional durable-bus replay; specified, not implemented here
 SUPPORTED_FEATURES: frozenset[str] = frozenset({FEATURE_SNAPSHOT})
 
+DEFAULT_VOUCHER_TTL = 30.0  # seconds (spec 05, section 1.1)
+
 _REGISTER_LABEL = b"a2a-cp/v1/register"
+
+
+class NoEligibleWorker(Exception):
+    """No attached Aggregator instance serves a Worker that matches (spec 04, section 4.1)."""
+
+
+class Signer(Protocol):
+    """Holds the CCR's SVID private key. The SDK never sees the key itself."""
+
+    def sign(self, message: bytes) -> bytes: ...
 
 
 def challenge_payload(
@@ -58,14 +78,13 @@ def challenge_payload(
     """What a Worker signs (spec 04, section 2.3): every field length-prefixed, so none can be
     confused with a neighbour, and the request bound by digest so no intermediary can alter it.
     """
-    fields = (
+    return length_prefixed(
         _REGISTER_LABEL,
         nonce,
         str(worker).encode(),
         hashlib.sha256(register_request).digest(),
         channel_binding,
     )
-    return b"".join(struct.pack(">I", len(f)) + f for f in fields)
 
 
 def negotiate(
@@ -91,10 +110,6 @@ class AggregatorLink(Protocol):
 
     def zone_snapshot(self) -> ZoneStateReport: ...
 
-    def submit(self, task: Task) -> bool: ...
-
-    def cancel(self, task_id: str, reason: str = "") -> bool: ...
-
     def revoke_worker(self, worker: SpiffeId) -> None: ...
 
 
@@ -115,6 +130,7 @@ class _Attachment:
     epoch: int
     features: frozenset[str]
     link: AggregatorLink
+    endpoint: str = ""
     last_sequence: int = 0
 
 
@@ -131,19 +147,13 @@ class _Pending:
 
 
 @dataclass(slots=True)
-class _Submission:
-    task: Task
-    on_result: ResultCallback
-    instance_id: str = ""
-    zone_id: str = ""
-
-
-@dataclass(slots=True)
 class Counters:
     dropped: int = 0  # malformed, inconsistent or unauthorized zone reports
     stale_reports: int = 0  # duplicate, superseded-epoch or out-of-order reports
     resyncs: int = 0  # snapshots requested after a report gap
     registrations_rejected: int = 0
+    vouchers_issued: int = 0
+    vouchers_refused: int = 0
 
 
 class Registry:
@@ -158,6 +168,11 @@ class Registry:
         allowed_zones: Iterable[str] | None = None,
         capability_policy: CapabilityAdmission | None = None,
         max_message_bytes: int = MAX_MESSAGE_BYTES,
+        signer: Signer | None = None,
+        signer_chain: Sequence[bytes] = (),
+        client_authorizer: ClientAuthorizer | None = None,
+        wall_clock_ns: Callable[[], int] = time.time_ns,
+        voucher_ttl: float = DEFAULT_VOUCHER_TTL,
     ) -> None:
         if identity.role is not Role.REGISTRY:
             raise ValueError("registry requires a registry identity")
@@ -169,11 +184,15 @@ class Registry:
         self._clock = clock
         self._allowed_zones = frozenset(allowed_zones) if allowed_zones is not None else None
         self._capability_policy = capability_policy
+        self._signer = signer
+        self._signer_chain = tuple(signer_chain)
+        self._client_authorizer = client_authorizer
+        self._wall_clock_ns = wall_clock_ns
+        self._voucher_ttl = voucher_ttl
         self._pending: dict[str, _Pending] = {}
         self._workers: dict[str, WorkerRecord] = {}
         self._attachments: dict[tuple[str, str], _Attachment] = {}
         self._zone_epochs: dict[str, int] = {}
-        self._submissions: dict[str, _Submission] = {}
         if bus is not None:
             self._session = bus.connect(identity)
             self._session.subscribe(REGISTRY_AGGREGATOR_STATE_PATTERN, self._on_report)
@@ -192,6 +211,7 @@ class Registry:
         instance_id: str | None = None,
         supported_versions: Iterable[int] = PROTOCOL_VERSIONS,
         features: Iterable[str] = (),
+        endpoint: str = "",
     ) -> AttachResponse:
         """Admit an Aggregator instance and grant it the next epoch for its zone."""
         if identity.role is not Role.AGGREGATOR or identity.zone_id is None:
@@ -209,12 +229,12 @@ class Registry:
         epoch = self._zone_epochs.get(zone, 0) + 1
         self._zone_epochs[zone] = epoch
         self._attachments[(zone, instance)] = _Attachment(
-            identity, instance, epoch, frozenset(selected), link
+            identity, instance, epoch, frozenset(selected), link, endpoint
         )
         return AttachResponse(epoch=epoch, selected_version=version, selected_features=selected)
 
     def detach_aggregator(self, identity: SpiffeId, instance_id: str) -> None:
-        """An instance left or was lost: its Worker sessions end and its tasks fail (spec 05, 4)."""
+        """An instance left or was lost: its Worker sessions end (spec 05, section 4.2)."""
         assert identity.zone_id is not None
         attachment = self._attachments.get((identity.zone_id, instance_id))
         if attachment is not None:
@@ -230,11 +250,6 @@ class Registry:
         ]
         for record in owned:
             del self._workers[str(record.identity)]
-        for task_id, submission in list(self._submissions.items()):
-            if submission.instance_id == instance and submission.zone_id == zone:
-                self.complete_submission(
-                    task_id, failed(submission.task, "aggregator_lost", retryable=True)
-                )
         if close_sessions:  # a superseded instance that is still running must stop serving
             for record in owned:
                 attachment.link.revoke_worker(record.identity)
@@ -384,59 +399,88 @@ class Registry:
     def epoch(self, zone_id: str) -> int:
         return self._zone_epochs.get(zone_id, 0)
 
-    # --- task submission (spec 04, section 4) ---------------------------------------------
+    # --- task vouchers (spec 04, section 4) -----------------------------------------------
 
-    def submit_task(
-        self, task: Task, on_result: ResultCallback, *, zone_id: str | None = None
-    ) -> None:
-        """Route ``task`` to an eligible Worker; ``on_result`` receives the final outcome once.
+    def issue_voucher(
+        self,
+        client: SpiffeId,
+        required_capabilities: Mapping[str, str],
+        digest: bytes,
+        *,
+        zone_id: str | None = None,
+    ) -> IssueTaskVoucherResponse:
+        """Authorize a client and name the Aggregator instance that may take its task.
 
-        Raises ValueError for an invalid or already in-flight task_id.
+        Sees routing metadata and a digest only, never the payload. Raises PermissionError if the
+        client is not authorized, ValueError for a malformed request, and NoEligibleWorker if no
+        attached instance serves a matching Worker.
         """
-        validate_token(task.task_id, "task_id")
-        if task.task_id in self._submissions:
-            raise ValueError(f"task_id {task.task_id!r} is already in flight")
-        if task.attempt > 1:
-            raise ValueError("attempt is owned by the aggregator; submit with attempt 1")
-        task = Task.FromString(task.SerializeToString())
-        task.attempt = 1
-        if task.deadline_ns and time.time_ns() > task.deadline_ns:
-            on_result(rejected(task, "deadline_exceeded", retryable=False))
-            return
-        submission = _Submission(task, on_result)
-        self._submissions[task.task_id] = submission
-        attachments = sorted(
-            self._attachments.values(), key=lambda a: (a.identity.zone_id or "", a.instance_id)
+        try:
+            response = self._issue(client, required_capabilities, digest, zone_id)
+        except (PermissionError, ValueError, NoEligibleWorker):
+            self.counters.vouchers_refused += 1
+            raise
+        self.counters.vouchers_issued += 1
+        return response
+
+    def _issue(
+        self,
+        client: SpiffeId,
+        required_capabilities: Mapping[str, str],
+        digest: bytes,
+        zone_id: str | None,
+    ) -> IssueTaskVoucherResponse:
+        if client.role is not Role.CLIENT or client.trust_domain != self.identity.trust_domain:
+            raise PermissionError("only clients of this trust domain may request vouchers")
+        authorizer = self._client_authorizer
+        if authorizer is None or not authorizer(client, required_capabilities):
+            raise PermissionError("client is not authorized for this task")
+        if self._signer is None:
+            raise PermissionError("this registry holds no voucher signing key")
+        if len(digest) != hashlib.sha256().digest_size:
+            raise ValueError("task_digest must be a SHA-256 digest")
+        validate_capabilities(required_capabilities)
+        attachment = self._choose_instance(required_capabilities, zone_id)
+        now = self._wall_clock_ns()
+        task_id = secrets.token_urlsafe(16)  # 128 random bits, 22 characters of the token grammar
+        voucher = TaskVoucher(
+            voucher_id=secrets.token_bytes(16),
+            task_id=task_id,
+            client_spiffe_id=str(client),
+            zone_id=attachment.identity.zone_id or "",
+            instance_id=attachment.instance_id,
+            epoch=attachment.epoch,
+            task_digest=digest,
+            issued_at_ns=now,
+            expires_at_ns=now + round(self._voucher_ttl * 1_000_000_000),
         )
-        for attachment in attachments:
-            if zone_id is not None and attachment.identity.zone_id != zone_id:
+        return IssueTaskVoucherResponse(
+            voucher=sign_voucher(voucher, self._signer.sign, self._signer_chain),
+            task_id=task_id,
+            endpoint=attachment.endpoint,
+        )
+
+    def _choose_instance(self, required: Mapping[str, str], zone_id: str | None) -> _Attachment:
+        """The instance serving the most Workers that could take the task, by this CCR's view.
+
+        The view is eventually consistent, so the Aggregator re-checks on arrival.
+        """
+        eligible: dict[tuple[str, str], int] = {}
+        for record in self._workers.values():
+            if record.state not in (WorkerState.IDLE, WorkerState.EXECUTING):
                 continue
-            submission.instance_id = attachment.instance_id
-            submission.zone_id = attachment.identity.zone_id or ""
-            try:
-                accepted = attachment.link.submit(task)
-            except ValueError:
-                self._submissions.pop(task.task_id, None)
-                raise
-            if accepted:
-                return
-        if self._submissions.pop(task.task_id, None) is not None:
-            on_result(rejected(task, "no_eligible_worker", retryable=True))
-
-    def cancel_task(self, task_id: str, reason: str = "") -> bool:
-        submission = self._submissions.get(task_id)
-        if submission is None:
-            return False
-        attachment = self._attachments.get((submission.zone_id, submission.instance_id))
-        return attachment is not None and attachment.link.cancel(task_id, reason)
-
-    def complete_submission(self, task_id: str, result: TaskResult) -> bool:
-        """Deliver a final outcome. False if ``task_id`` did not come through ``submit_task``."""
-        submission = self._submissions.pop(task_id, None)
-        if submission is None:
-            return False
-        submission.on_result(result)
-        return True
+            if zone_id is not None and record.identity.zone_id != zone_id:
+                continue
+            if capabilities_match(required, record.view.capabilities):
+                key = (record.identity.zone_id or "", record.instance_id)
+                eligible[key] = eligible.get(key, 0) + 1
+        candidates = [
+            key for key in eligible if key in self._attachments and self._attachments[key].endpoint
+        ]  # an instance that advertises no intake address cannot be handed a client
+        if not candidates:
+            raise NoEligibleWorker("no attached instance serves a matching Worker")
+        best = min(candidates, key=lambda key: (-eligible[key], key))
+        return self._attachments[best]
 
     # --- zone reports (spec 03, section 9; spec 05, section 2.3) --------------------------
 

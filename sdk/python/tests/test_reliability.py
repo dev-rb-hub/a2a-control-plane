@@ -185,13 +185,10 @@ def test_duplicate_reports_are_ignored() -> None:
     assert c.registry.record(SpiffeId.worker(TD, "z1", "w2")) is not None
 
 
-def test_a_restarted_instance_ends_its_old_sessions_and_fails_its_tasks() -> None:
+def test_a_restarted_instance_ends_its_old_sessions() -> None:
     c = DevCluster()
     old = c.aggregators["z1"]
     w = c.add_worker("w1", capabilities={"a": "1"})
-    w.on_task(lambda task: None)
-    outcomes: list[TaskResult] = []
-    c.registry.submit_task(make_task("t1"), outcomes.append)
     assert w.session is not None
     Aggregator(
         SpiffeId.aggregator(TD, "z1"), c.bus, c.registry, c.clock, instance_id=old.instance_id
@@ -199,10 +196,6 @@ def test_a_restarted_instance_ends_its_old_sessions_and_fails_its_tasks() -> Non
     assert c.registry.epoch("z1") == 2
     assert c.registry.record(W1) is None  # the new epoch starts with an empty snapshot
     assert old.worker_state("w1") is None and w.session.closed  # the superseded one stopped serving
-    [outcome] = outcomes
-    assert outcome.error.code == "aggregator_lost" and outcome.error.retryable
-    late = succeeded(make_task("t1"), b"late")
-    assert not c.registry.complete_submission("t1", late)  # nothing from the old instance counts
 
 
 def test_a_report_from_a_superseded_epoch_is_stale() -> None:

@@ -89,6 +89,10 @@ message AttachRequest {
 
   repeated uint32 supported_versions = 2;
   repeated string features = 3;
+
+  // Where clients reach this instance's TaskIntake service, for example "agg-1.eu-west:50051". The
+  // CCR hands it to clients with a voucher.
+  string endpoint = 4;
 }
 
 message AttachResponse {

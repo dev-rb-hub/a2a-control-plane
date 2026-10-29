@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import struct
 import time
 from collections.abc import Mapping
 
@@ -14,6 +16,7 @@ from a2a_control_plane._proto.task_pb2 import (
     TaskError,
     TaskResult,
 )
+from a2a_control_plane.framing import length_prefixed
 from a2a_control_plane.tokens import validate_token
 
 __all__ = [
@@ -31,10 +34,32 @@ __all__ = [
     "make_task",
     "rejected",
     "succeeded",
+    "task_digest",
 ]
 
 TASK_TYPE = "a2a.controlplane.v1.Task"
 RESULT_TYPE = "a2a.controlplane.v1.TaskResult"
+_TASK_LABEL = b"a2a-cp/v1/task"
+
+
+def task_digest(task: Task) -> bytes:
+    """SHA-256 binding a voucher to one task (spec 04, section 4.2).
+
+    Covers everything the client controls: kind, content type, payload, deadline and required
+    capabilities. It leaves out ``task_id`` and ``attempt``, which the control plane assigns, and
+    ``trace_context``, which is not part of what the task means.
+    """
+    capabilities = sorted(task.required_capabilities.items())
+    fields = [
+        _TASK_LABEL,
+        task.kind.encode(),
+        task.content_type.encode(),
+        task.payload,
+        struct.pack(">Q", task.deadline_ns),
+        struct.pack(">I", len(capabilities)),
+        *(part.encode() for pair in capabilities for part in pair),
+    ]
+    return hashlib.sha256(length_prefixed(*fields)).digest()
 
 
 def make_task(

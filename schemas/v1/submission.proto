@@ -9,15 +9,83 @@ option java_multiple_files = true;
 option java_package = "io.github.devrbhub.a2acontrolplane.v1";
 option csharp_namespace = "A2A.ControlPlane.V1";
 
-// Task origination and the CCR-to-Aggregator control hop (spec/04-control-api.md, sections 4, 6).
+// Task origination (spec/04-control-api.md, section 4).
+//
+// The CCR is an authorization and routing referee. It never sees a task payload: a client asks it
+// for a signed voucher that names the Aggregator instance to use, then delivers the task, with the
+// voucher, directly to that Aggregator.
 
-// A client submits a task to the CCR; the CCR forwards the same message to a zone Aggregator.
-message SubmitTaskRequest {
-  // Target zone. Empty lets the CCR choose any zone that has an eligible Worker.
+// Client to CCR: ask where a task may go. Carries routing metadata and a digest, never the payload.
+message IssueTaskVoucherRequest {
+  // Restrict the choice to one zone. Empty lets the CCR choose.
   string zone_id = 1;
 
-  // The task_id is chosen by the submitting client and MUST be unique among in-flight tasks in
-  // the cluster. attempt MUST be 1 or unset; the Aggregator owns it afterwards.
+  // Capabilities a Worker must advertise, as in Task.required_capabilities. The CCR uses them to
+  // choose an Aggregator instance that serves a matching Worker.
+  map<string, string> required_capabilities = 2;
+
+  // SHA-256 over the task fields the client will send, computed as defined in
+  // spec/04-control-api.md, section 4.2. It binds the voucher to exactly one task.
+  bytes task_digest = 3;
+}
+
+message IssueTaskVoucherResponse {
+  SignedTaskVoucher voucher = 1;
+
+  // The task_id the CCR assigned. The client MUST put it in the Task it submits.
+  string task_id = 2;
+
+  // Where to reach the chosen Aggregator instance, as advertised when the instance attached. Not
+  // covered by the signature: the client authenticates the Aggregator by its SPIFFE ID.
+  string endpoint = 3;
+}
+
+// The statement the CCR signs.
+message TaskVoucher {
+  // 128 random bits. An Aggregator accepts each voucher_id once.
+  bytes voucher_id = 1;
+
+  // Assigned by the CCR from a cryptographically secure source. Unique by construction.
+  string task_id = 2;
+
+  // SPIFFE ID of the client the voucher was issued to. Only that client may use it.
+  string client_spiffe_id = 3;
+
+  // The Aggregator instance that may accept the task, and the epoch the CCR granted it. A voucher
+  // is void for any other instance and for any other epoch of the same instance.
+  string zone_id = 4;
+  string instance_id = 5;
+  uint64 epoch = 6;
+
+  // Must equal the digest of the task the client submits.
+  bytes task_digest = 7;
+
+  // Unix time in nanoseconds. A voucher is valid from issued_at_ns until expires_at_ns, allowing
+  // the configured clock skew.
+  uint64 issued_at_ns = 8;
+  uint64 expires_at_ns = 9;
+}
+
+// A TaskVoucher with the CCR's signature. The signature covers the exact bytes of `voucher`, so no
+// canonical form of the message is needed.
+message SignedTaskVoucher {
+  // The serialized TaskVoucher, byte for byte as signed.
+  bytes voucher = 1;
+
+  // Signature over the payload defined in spec/04-control-api.md, section 4.3, made with the
+  // private key of the CCR's X.509-SVID.
+  bytes signature = 2;
+
+  // The CCR's X.509-SVID chain (DER, leaf first). The verifier validates it against its trust
+  // bundle and checks that the leaf's URI SAN is the CCR's SPIFFE ID.
+  repeated bytes signer_chain = 3;
+}
+
+// Client to Aggregator: deliver the task. The call completes with the task's final outcome.
+message SubmitTaskRequest {
+  SignedTaskVoucher voucher = 1;
+
+  // task_id MUST equal the voucher's task_id; attempt MUST be 1 or unset.
   Task task = 2;
 }
 
@@ -29,7 +97,7 @@ message CancelTaskRequest {
 }
 
 message CancelTaskResponse {
-  // True if the task was in flight and a cancellation was requested.
+  // True if the task was in flight, belongs to the caller, and a cancellation was requested.
   bool accepted = 1;
 }
 

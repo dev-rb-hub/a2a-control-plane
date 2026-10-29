@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12registration.proto\x12\x13\x61\x32\x61.controlplane.v1\"\xc2\x01\n\x0fRegisterRequest\x12\x1a\n\x12supported_versions\x18\x01 \x03(\r\x12\x10\n\x08\x66\x65\x61tures\x18\x02 \x03(\t\x12L\n\x0c\x63\x61pabilities\x18\x03 \x03(\x0b\x32\x36.a2a.controlplane.v1.RegisterRequest.CapabilitiesEntry\x1a\x33\n\x11\x43\x61pabilitiesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x90\x01\n\x18\x42\x65ginRegistrationRequest\x12\x18\n\x10worker_spiffe_id\x18\x01 \x01(\t\x12\x18\n\x10register_request\x18\x02 \x01(\x0c\x12\x12\n\nsvid_chain\x18\x03 \x03(\x0c\x12\x17\n\x0f\x63hannel_binding\x18\x04 \x01(\x0c\x12\x13\n\x0binstance_id\x18\x05 \x01(\t\"o\n\x15RegistrationChallenge\x12\r\n\x05nonce\x18\x01 \x01(\x0c\x12\x12\n\ntimeout_ms\x18\x02 \x01(\r\x12\x18\n\x10selected_version\x18\x03 \x01(\r\x12\x19\n\x11selected_features\x18\x04 \x03(\t\"_\n\x1b\x43ompleteRegistrationRequest\x12\x18\n\x10worker_spiffe_id\x18\x01 \x01(\t\x12\x11\n\tsignature\x18\x02 \x01(\x0c\x12\x13\n\x0binstance_id\x18\x03 \x01(\t\"\x82\x02\n\x15RegistrationAdmission\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x18\n\x10selected_version\x18\x02 \x01(\r\x12\x19\n\x11selected_features\x18\x03 \x03(\t\x12\x63\n\x15\x61\x64mitted_capabilities\x18\x04 \x03(\x0b\x32\x44.a2a.controlplane.v1.RegistrationAdmission.AdmittedCapabilitiesEntry\x1a;\n\x19\x41\x64mittedCapabilitiesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"R\n\rAttachRequest\x12\x13\n\x0binstance_id\x18\x01 \x01(\t\x12\x1a\n\x12supported_versions\x18\x02 \x03(\r\x12\x10\n\x08\x66\x65\x61tures\x18\x03 \x03(\t\"T\n\x0e\x41ttachResponse\x12\r\n\x05\x65poch\x18\x01 \x01(\x04\x12\x18\n\x10selected_version\x18\x02 \x01(\r\x12\x19\n\x11selected_features\x18\x03 \x03(\t\"$\n\rDetachRequest\x12\x13\n\x0binstance_id\x18\x01 \x01(\t\"\x10\n\x0e\x44\x65tachResponseBy\n%io.github.devrbhub.a2acontrolplane.v1P\x01Z8github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1\xaa\x02\x13\x41\x32\x41.ControlPlane.V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12registration.proto\x12\x13\x61\x32\x61.controlplane.v1\"\xc2\x01\n\x0fRegisterRequest\x12\x1a\n\x12supported_versions\x18\x01 \x03(\r\x12\x10\n\x08\x66\x65\x61tures\x18\x02 \x03(\t\x12L\n\x0c\x63\x61pabilities\x18\x03 \x03(\x0b\x32\x36.a2a.controlplane.v1.RegisterRequest.CapabilitiesEntry\x1a\x33\n\x11\x43\x61pabilitiesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x90\x01\n\x18\x42\x65ginRegistrationRequest\x12\x18\n\x10worker_spiffe_id\x18\x01 \x01(\t\x12\x18\n\x10register_request\x18\x02 \x01(\x0c\x12\x12\n\nsvid_chain\x18\x03 \x03(\x0c\x12\x17\n\x0f\x63hannel_binding\x18\x04 \x01(\x0c\x12\x13\n\x0binstance_id\x18\x05 \x01(\t\"o\n\x15RegistrationChallenge\x12\r\n\x05nonce\x18\x01 \x01(\x0c\x12\x12\n\ntimeout_ms\x18\x02 \x01(\r\x12\x18\n\x10selected_version\x18\x03 \x01(\r\x12\x19\n\x11selected_features\x18\x04 \x03(\t\"_\n\x1b\x43ompleteRegistrationRequest\x12\x18\n\x10worker_spiffe_id\x18\x01 \x01(\t\x12\x11\n\tsignature\x18\x02 \x01(\x0c\x12\x13\n\x0binstance_id\x18\x03 \x01(\t\"\x82\x02\n\x15RegistrationAdmission\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x18\n\x10selected_version\x18\x02 \x01(\r\x12\x19\n\x11selected_features\x18\x03 \x03(\t\x12\x63\n\x15\x61\x64mitted_capabilities\x18\x04 \x03(\x0b\x32\x44.a2a.controlplane.v1.RegistrationAdmission.AdmittedCapabilitiesEntry\x1a;\n\x19\x41\x64mittedCapabilitiesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"d\n\rAttachRequest\x12\x13\n\x0binstance_id\x18\x01 \x01(\t\x12\x1a\n\x12supported_versions\x18\x02 \x03(\r\x12\x10\n\x08\x66\x65\x61tures\x18\x03 \x03(\t\x12\x10\n\x08\x65ndpoint\x18\x04 \x01(\t\"T\n\x0e\x41ttachResponse\x12\r\n\x05\x65poch\x18\x01 \x01(\x04\x12\x18\n\x10selected_version\x18\x02 \x01(\r\x12\x19\n\x11selected_features\x18\x03 \x03(\t\"$\n\rDetachRequest\x12\x13\n\x0binstance_id\x18\x01 \x01(\t\"\x10\n\x0e\x44\x65tachResponseBy\n%io.github.devrbhub.a2acontrolplane.v1P\x01Z8github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1\xaa\x02\x13\x41\x32\x41.ControlPlane.V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -51,11 +51,11 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_REGISTRATIONADMISSION_ADMITTEDCAPABILITIESENTRY']._serialized_start=797
   _globals['_REGISTRATIONADMISSION_ADMITTEDCAPABILITIESENTRY']._serialized_end=856
   _globals['_ATTACHREQUEST']._serialized_start=858
-  _globals['_ATTACHREQUEST']._serialized_end=940
-  _globals['_ATTACHRESPONSE']._serialized_start=942
-  _globals['_ATTACHRESPONSE']._serialized_end=1026
-  _globals['_DETACHREQUEST']._serialized_start=1028
-  _globals['_DETACHREQUEST']._serialized_end=1064
-  _globals['_DETACHRESPONSE']._serialized_start=1066
-  _globals['_DETACHRESPONSE']._serialized_end=1082
+  _globals['_ATTACHREQUEST']._serialized_end=958
+  _globals['_ATTACHRESPONSE']._serialized_start=960
+  _globals['_ATTACHRESPONSE']._serialized_end=1044
+  _globals['_DETACHREQUEST']._serialized_start=1046
+  _globals['_DETACHREQUEST']._serialized_end=1082
+  _globals['_DETACHRESPONSE']._serialized_start=1084
+  _globals['_DETACHRESPONSE']._serialized_end=1100
 # @@protoc_insertion_point(module_scope)

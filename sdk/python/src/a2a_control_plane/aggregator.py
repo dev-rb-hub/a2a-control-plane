@@ -12,9 +12,11 @@ import uuid
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from google.protobuf.message import DecodeError
 
 from a2a_control_plane._proto.registration_pb2 import RegistrationAdmission, RegistrationChallenge
+from a2a_control_plane._proto.submission_pb2 import SignedTaskVoucher
 from a2a_control_plane.bus import MAX_MESSAGE_BYTES, TYPE_HEADER, InMemoryBus, Message, Session
 from a2a_control_plane.control import (
     CONTROL_TYPE,
@@ -60,16 +62,25 @@ from a2a_control_plane.tasks import (
     Task,
     TaskResult,
     failed,
+    rejected,
+    task_digest,
 )
 from a2a_control_plane.tokens import validate_token
+from a2a_control_plane.voucher import open_voucher
 
 _KNOWN_STATUSES = frozenset(
     {TASK_STATUS_SUCCEEDED, TASK_STATUS_FAILED, TASK_STATUS_REJECTED, TASK_STATUS_CANCELLED}
 )
 
 ResultCallback = Callable[[str, TaskResult], None]  # (agent_id, result): terminal outcomes only
+TaskOutcome = Callable[[TaskResult], None]  # a client's call completing with the final outcome
 TaskFailedCallback = Callable[[str, str], None]  # (agent_id, task_id): worker lost, no retry
 ReassignCallback = Callable[[Task, str, str], None]  # (new task, from agent, to agent)
+VoucherKeys = Callable[[SpiffeId], Ed25519PublicKey | None]  # CCR identity -> signing key
+
+
+class TaskAlreadyInFlight(ValueError):
+    """The ``task_id`` is already in flight here; a transport maps it to ALREADY_EXISTS."""
 
 
 @dataclass(slots=True)
@@ -102,6 +113,8 @@ class _Flight:
     agent_id: str
     tried: set[str]
     cancel_requested: bool = False
+    client: SpiffeId | None = None  # who submitted it through the intake, if anyone
+    on_result: TaskOutcome | None = None
 
 
 @dataclass(slots=True)
@@ -129,6 +142,10 @@ class Aggregator:
         max_attempts: int = 3,
         max_in_flight: int = 16,
         max_message_bytes: int = MAX_MESSAGE_BYTES,
+        endpoint: str = "",
+        voucher_keys: VoucherKeys | None = None,
+        voucher_skew: float = 5.0,
+        wall_clock_ns: Callable[[], int] = time.time_ns,
         on_result: ResultCallback | None = None,
         on_task_failed: TaskFailedCallback | None = None,
         on_reassign: ReassignCallback | None = None,
@@ -154,6 +171,11 @@ class Aggregator:
         self._max_attempts = max_attempts
         self._max_in_flight = max_in_flight
         self._max_message_bytes = max_message_bytes
+        self._voucher_keys = voucher_keys
+        self._voucher_skew_ns = round(voucher_skew * 1_000_000_000)
+        self._wall_clock_ns = wall_clock_ns
+        self._seen_vouchers: dict[bytes, int] = {}  # voucher_id -> when it can be forgotten
+        self.vouchers_refused = 0
         self._workers: dict[str, _Entry] = {}
         self._flights: dict[str, _Flight] = {}
         self._pending: dict[str, _Pending] = {}
@@ -173,6 +195,7 @@ class Aggregator:
             instance_id=self.instance_id,
             supported_versions=PROTOCOL_VERSIONS,
             features=features,
+            endpoint=endpoint,
         )
         self.epoch = attached.epoch
         self.features = tuple(attached.selected_features)
@@ -339,12 +362,13 @@ class Aggregator:
 
         if self._should_retry(flight, result) and self._reassign(flight, agent_id):
             return
-        self._finish(agent_id, result.task_id, result)
+        self._finish(agent_id, flight, result)
 
-    def _finish(self, agent_id: str, task_id: str, result: TaskResult) -> None:
+    def _finish(self, agent_id: str, flight: _Flight, result: TaskResult) -> None:
         if self.on_result is not None:
             self.on_result(agent_id, result)
-        self._registry.complete_submission(task_id, result)
+        if flight.on_result is not None:
+            flight.on_result(result)  # completes the submitting client's call
 
     def _entry_for(self, message: Message) -> _Entry | None:
         try:
@@ -353,38 +377,95 @@ class Aggregator:
             return None
         return self._workers.get(agent_id) if agent_id is not None else None
 
-    # --- dispatch, reassignment, cancellation (spec 03, section 7) ------------------------
+    # --- task intake (spec 04, section 4) ------------------------------------------------
 
-    def submit(self, task: Task) -> bool:
-        """Place a task submitted through the CCR on an eligible Worker (``ZoneControl.Dispatch``).
+    def submit_task(
+        self, client: SpiffeId, signed: SignedTaskVoucher, task: Task, on_result: TaskOutcome
+    ) -> None:
+        """``TaskIntake.SubmitTask``: accept a task from a client that holds a CCR voucher.
 
-        Returns False if no Worker in the zone is eligible. Raises ValueError for an invalid or
-        already in-flight task_id.
+        ``client`` is the SPIFFE ID of the authenticated connection. ``on_result`` receives the
+        final outcome once. Raises PermissionError if the voucher or the client is not acceptable
+        and ValueError for a malformed task; a refused voucher is not consumed.
         """
-        validate_token(task.task_id, "task_id")
-        if task.task_id in self._flights:
-            raise ValueError(f"task_id {task.task_id!r} is already in flight")
+        try:
+            self._check_voucher(client, signed, task)
+        except (PermissionError, ValueError):
+            self.vouchers_refused += 1
+            raise
         placed = Task()
         placed.CopyFrom(task)
         placed.attempt = 1
+        if placed.deadline_ns and self._wall_clock_ns() > placed.deadline_ns:
+            on_result(rejected(placed, "deadline_exceeded", retryable=False))
+            return
         entry = self._pick_worker(set(), placed)
-        if entry is None:
-            return False
+        if entry is None:  # the CCR's view was stale or the Worker has since filled up
+            on_result(rejected(placed, "no_eligible_worker", retryable=True))
+            return
         agent_id = entry.identity.agent_id
         assert agent_id is not None
-        self._register_flight(entry, placed, {agent_id})
+        self._register_flight(entry, placed, {agent_id}, client=client, on_result=on_result)
         self._publish_task(agent_id, placed)
-        return True
+
+    def cancel_task(self, client: SpiffeId, task_id: str, reason: str = "") -> bool:
+        """``TaskIntake.CancelTask``: only the client that submitted a task may cancel it."""
+        flight = self._flights.get(task_id)
+        if flight is None or flight.client != client:
+            return False  # an unknown task and someone else's task look the same
+        return self.cancel(task_id, reason)
+
+    def _check_voucher(self, client: SpiffeId, signed: SignedTaskVoucher, task: Task) -> None:
+        if self._voucher_keys is None:
+            raise PermissionError("this aggregator does not accept task vouchers")
+        if client.role is not Role.CLIENT or client.trust_domain != self.identity.trust_domain:
+            raise PermissionError("only clients of this trust domain may submit tasks")
+        if signed.ByteSize() + task.ByteSize() > self._max_message_bytes:
+            raise ValueError("submission exceeds the message size limit")
+        key = self._voucher_keys(SpiffeId.registry(self.identity.trust_domain))
+        if key is None:
+            raise PermissionError("no voucher signing key for this trust domain")
+        voucher = open_voucher(signed, key)
+        if voucher.client_spiffe_id != str(client):
+            raise PermissionError("voucher was issued to another client")
+        if (
+            voucher.zone_id != self.zone_id
+            or voucher.instance_id != self.instance_id
+            or voucher.epoch != self.epoch
+        ):
+            raise PermissionError("voucher names another aggregator instance or epoch")
+        now = self._wall_clock_ns()
+        if now + self._voucher_skew_ns < voucher.issued_at_ns:
+            raise PermissionError("voucher is not yet valid")
+        if now > voucher.expires_at_ns + self._voucher_skew_ns:
+            raise PermissionError("voucher has expired")
+        if task.task_id != voucher.task_id:
+            raise ValueError("task_id does not match the voucher")
+        if task.attempt > 1:
+            raise ValueError("attempt is owned by the aggregator; submit with attempt 1")
+        if task_digest(task) != voucher.task_digest:
+            raise PermissionError("task does not match the voucher")
+        if task.task_id in self._flights:
+            raise TaskAlreadyInFlight(f"task_id {task.task_id!r} is already in flight")
+        self._seen_vouchers = {
+            voucher_id: until for voucher_id, until in self._seen_vouchers.items() if until >= now
+        }
+        if voucher.voucher_id in self._seen_vouchers:
+            raise PermissionError("voucher was already used")
+        self._seen_vouchers[voucher.voucher_id] = voucher.expires_at_ns + self._voucher_skew_ns
+
+    # --- dispatch, reassignment, cancellation (spec 03, section 7) ------------------------
 
     def dispatch(self, agent_id: str, task: Task) -> bool:
         """Send a task to a named Worker. Only eligible Workers receive tasks (spec 02, 5.3).
 
-        Returns False if the Worker cannot take it. Raises ValueError for an invalid or
-        already in-flight task_id (spec 03, 7.1).
+        This is for control components that run in the Aggregator's own trust boundary. Clients
+        use ``submit_task``. Returns False if the Worker cannot take it. Raises ValueError for an
+        invalid or already in-flight task_id (spec 03, 7.1).
         """
         validate_token(task.task_id, "task_id")
         if task.task_id in self._flights:
-            raise ValueError(f"task_id {task.task_id!r} is already in flight")
+            raise TaskAlreadyInFlight(f"task_id {task.task_id!r} is already in flight")
         entry = self._workers.get(agent_id)
         if entry is None or not self._eligible(entry, task):
             return False
@@ -439,7 +520,13 @@ class Aggregator:
             return False
         target_id = target.identity.agent_id
         assert target_id is not None
-        self._register_flight(target, retry, flight.tried | {target_id})
+        self._register_flight(
+            target,
+            retry,
+            flight.tried | {target_id},
+            client=flight.client,
+            on_result=flight.on_result,
+        )
         if self.on_reassign is not None:
             self.on_reassign(retry, from_agent, target_id)
         self._publish_task(target_id, retry)
@@ -462,11 +549,21 @@ class Aggregator:
             candidates, key=lambda e: (len(e.in_flight), e.identity.agent_id or ""), default=None
         )
 
-    def _register_flight(self, entry: _Entry, task: Task, tried: set[str]) -> None:
+    def _register_flight(
+        self,
+        entry: _Entry,
+        task: Task,
+        tried: set[str],
+        *,
+        client: SpiffeId | None = None,
+        on_result: TaskOutcome | None = None,
+    ) -> None:
         agent_id = entry.identity.agent_id
         assert agent_id is not None
         entry.in_flight.add(task.task_id)
-        self._flights[task.task_id] = _Flight(task, agent_id, set(tried))
+        self._flights[task.task_id] = _Flight(
+            task, agent_id, set(tried), client=client, on_result=on_result
+        )
         if entry.machine.state is WorkerState.IDLE and entry.machine.apply(
             WorkerEvent.TASK_ACCEPTED
         ):  # T5
@@ -625,6 +722,5 @@ class Aggregator:
             if not self._reassign(flight, agent_id):
                 if self.on_task_failed is not None:
                     self.on_task_failed(agent_id, task_id)
-                self._registry.complete_submission(
-                    task_id, failed(flight.task, "worker_lost", retryable=True)
-                )
+                if flight.on_result is not None:
+                    flight.on_result(failed(flight.task, "worker_lost", retryable=True))
