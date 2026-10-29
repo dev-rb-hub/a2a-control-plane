@@ -60,7 +60,7 @@ Follow-ups to the voucher-based task origination in PR #20, in the order they sh
 | Decision | Why it matters | Where |
 |----------|----------------|-------|
 | Async model for the roles (event-loop facade, async-native, or locks) | Blocks both real transports | [#5](https://github.com/dev-rb-hub/a2a-control-plane/issues/5) |
-| License and copyright holder | Decided: MIT, copyright Rendu Barkhuizen, with `NOTICE`, `TRADEMARKS.md` and DCO sign-off in `CONTRIBUTING.md`. Still open: IP lawyer review, a DCO bot, optional move to Apache-2.0 for an express patent grant, and a standard CLA if the project ever moves off a permissive licence | `LICENSE`, `NOTICE`, `TRADEMARKS.md` |
+| License and copyright holder | Decided: Apache-2.0 for code, schemas and reference, CC BY 4.0 for `spec/` (previously MIT), copyright Rendu Barkhuizen, with `NOTICE`, `TRADEMARKS.md` and DCO sign-off in `CONTRIBUTING.md`. Still open: IP lawyer review, a DCO bot, and a standard CLA if the project ever moves off these licences | `LICENSE`, `NOTICE`, `TRADEMARKS.md` |
 | Relationship to the Linux Foundation A2A project | The README states independence. Whether to propose this as a complement or contribute upstream is a strategic call | README note |
 | Governance with a single maintainer | `GOVERNANCE.md` names one maintainer and requires code-owner approval. Adding co-maintainers changes the review rules | `GOVERNANCE.md`, `.github/CODEOWNERS` |
 | PyPI name and first release | Publishing is hard to undo | [#15](https://github.com/dev-rb-hub/a2a-control-plane/issues/15) |

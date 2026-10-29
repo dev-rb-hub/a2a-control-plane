@@ -1,7 +1,7 @@
 # a2a-control-plane: Open Standard Specification for High-Scale Agentic Architectures (A2A)
 
 [![Spec Version](https://img.shields.io/badge/spec-v0.1.0--draft-blue)](spec/)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0%20%2B%20CC%20BY--ND%204.0-green)](LICENSE)
 [![Status](https://img.shields.io/badge/status-draft-orange)](GOVERNANCE.md)
 
 > An open standard for **zero-trust agent-to-agent (A2A) control planes**: secure, low-noise orchestration of large multi-agent AI systems using SPIFFE/SPIRE identity, mTLS, regional aggregators, NATS messaging, gRPC, and Protocol Buffers.
@@ -49,7 +49,7 @@ multi-agent systems, agentic AI architecture, agent-to-agent (A2A) protocol, AI 
 
 ## ⚖️ License & Attribution
 
-Released under the [MIT License](LICENSE). Created by **Rendu Barkhuizen** ([@dev-rb-hub](https://github.com/dev-rb-hub)), who is the original author and maintainer. Please keep the copyright notice and [NOTICE](NOTICE) in copies and derivatives, and cite the project using [CITATION.cff](CITATION.cff).
+The specification text in [`spec/`](spec/) is released under [CC BY 4.0](LICENSE-CC-BY). The code, schemas and reference material (`sdk/`, `schemas/`, `reference/`) are released under the [Apache License 2.0](LICENSE-APACHE). [LICENSE](LICENSE) explains the split. Created by **Rendu Barkhuizen** ([@dev-rb-hub](https://github.com/dev-rb-hub)), who is the original author and maintainer. Please keep the copyright notice and [NOTICE](NOTICE) in copies and derivatives, and cite the project using [CITATION.cff](CITATION.cff).
 
 The names "a2a-control-plane" and "A2A Control Plane" are covered by the [trademark policy](TRADEMARKS.md). Contribution terms are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
