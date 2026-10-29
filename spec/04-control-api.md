@@ -14,7 +14,7 @@ The messages are defined in [`schemas/v1/registration.proto`](../schemas/v1/regi
 | `Registration` | CCR | Aggregator | Attach an Aggregator instance; relay a Worker's admission. |
 | `Admin` | CCR | Administrative client | Revoke an identity; list Workers. |
 | `TaskSubmission` | CCR | Authorized client | Obtain a task voucher. No payload. |
-| `TaskIntake` | Aggregator instance | Client holding a voucher | Submit a task; cancel it. |
+| `TaskIntake` | Aggregator instance | Client holding a voucher | Submit a task; cancel it; ask what became of it. |
 | `ZoneControl` | Aggregator instance | CCR | Snapshot, revoke a Worker. |
 
 ## 2. Worker Admission
@@ -187,10 +187,10 @@ The Aggregator MUST accept a submission only if every check passes, and MUST rej
 4. `zone_id`, `instance_id` and `epoch` equal this instance's own. A voucher is void at any other instance and at any other epoch of the same instance, so a restart invalidates the vouchers it had outstanding.
 5. The current time is not before `issued_at_ns` and not after `expires_at_ns`, allowing the clock skew tolerance of [05-operations](05-operations.md) Section 1.1 (default 5 seconds) on each side.
 6. The task's `task_id` equals the voucher's, its `attempt` is 1 or unset, and the digest of the task, computed as in Section 4.2, equals `task_digest`.
-7. The `task_id` is not already in flight, and `voucher_id` has not been accepted before. The Aggregator MUST remember each accepted `voucher_id` until its expiry plus the skew tolerance, so that a voucher is accepted once.
+7. The `task_id` is not already in flight, and `voucher_id` has not been accepted before. The Aggregator MUST remember each accepted `voucher_id` until the voucher can no longer be presented, that is until its expiry plus the skew tolerance, and not for a shorter time. The memory MUST be bounded. When it is full of vouchers that can still be presented, the Aggregator MUST refuse new submissions with `RESOURCE_EXHAUSTED`, and MUST NOT evict an entry that has not expired. It MUST NOT use a least-recently-used or any other policy that drops live entries, because a voucher whose entry was dropped can be replayed. A refusal costs availability; an eviction costs the single-use guarantee. The Aggregator SHOULD cap the share of the memory that one client can hold.
 8. The whole message, including the voucher and its signer chain, is within the size limit ([05-operations](05-operations.md) Section 5), checked before the content is parsed.
 
-A rejection caused by checks 1 to 5, 7 or the replay of a voucher is `PERMISSION_DENIED` ([Section 7](#7-error-model)); a malformed task is `INVALID_ARGUMENT`. A rejected submission does not consume the voucher, unless the voucher itself was already used.
+A rejection caused by checks 1 to 5, 7 or the replay of a voucher is `PERMISSION_DENIED` ([Section 7](#7-error-model)); a task already in flight is `ALREADY_EXISTS`; a malformed task is `INVALID_ARGUMENT`; a full voucher memory is `RESOURCE_EXHAUSTED`. A rejected submission does not consume the voucher, unless the voucher itself was already used.
 
 After the checks the Aggregator selects a Worker as in [03-protocols](03-protocols.md) Section 7.1. If `deadline_ns` has passed, the outcome is `TASK_STATUS_REJECTED` with error code `deadline_exceeded` and `retryable` unset. If no Worker is eligible, which can happen because the CCR's records lag, the outcome is `TASK_STATUS_REJECTED` with error code `no_eligible_worker` and `retryable` set. The client then MAY request a new voucher.
 
@@ -201,7 +201,7 @@ The Aggregator MUST NOT dispatch a task for any other reason, and MUST NOT dispa
 - `SubmitTask` completes with exactly one `TaskResult`, the task's final outcome: the result that completed the task, or a failure produced under Section 4.6. Results that led to a reassignment are not returned ([03-protocols](03-protocols.md) Section 7.3).
 - The Aggregator keeps running a task whose client has disconnected. A client that stops waiting does not cancel the task; it MUST call `TaskIntake.CancelTask`.
 - `CancelTask` asks the instance to cancel a task in flight. Only the client that submitted the task MAY cancel it. For any other caller, and for an unknown or finished task, the response MUST be `accepted` false, so that an unauthorized caller cannot learn whether a task exists. The outcome still arrives on the original `SubmitTask` call, normally as `TASK_STATUS_CANCELLED` ([03-protocols](03-protocols.md) Section 7.4).
-- If the instance fails or the connection breaks, the client sees a transport error (`UNAVAILABLE`) on its call. The client cannot tell whether the task ran. The CCR does not track tasks and does not report on them. A client that resubmits MUST request a new voucher, and a task whose effects must not repeat MUST be idempotent ([05-operations](05-operations.md) Section 3).
+- If the instance fails or the connection breaks, the client sees a transport error (`UNAVAILABLE`) on its call. The task keeps running, and the client MUST NOT assume it did not. It asks the Aggregator's task ledger (Section 4.7) what became of the task. The CCR does not track tasks and does not report on them. A client that resubmits MUST request a new voucher, and a task whose effects must not repeat MUST be idempotent ([05-operations](05-operations.md) Section 3).
 
 ### 4.6 Errors Produced by the Control Plane
 
@@ -212,10 +212,24 @@ When the control plane, rather than a Worker, ends a task, it MUST use these cod
 | `deadline_exceeded` | `REJECTED` | false | The deadline had passed before dispatch or on receipt. |
 | `no_eligible_worker` | `REJECTED` | true | No Worker was eligible when the Aggregator received the task. |
 | `worker_lost` | `FAILED` | true | The Worker holding the task was lost and the task could not be reassigned. |
+| `aggregator_lost` | `FAILED` | true | An Aggregator instance with a durable ledger started and found the task in flight from an earlier run of the same instance (Section 4.7). |
 | `cancelled` | `CANCELLED` | false | The Worker stopped the task on request. |
 | `result_too_large` | `FAILED` | false | The Worker's result exceeded the size limit. |
 
-`retryable` is a hint to the originator. An originator that resubmits after `worker_lost`, or after a transport error, MUST accept that the earlier attempt may have run in part ([05-operations](05-operations.md) Section 3).
+`retryable` is a hint to the originator. An originator that resubmits after `worker_lost` or `aggregator_lost`, or after a transport error, MUST accept that the earlier attempt may have run in part ([05-operations](05-operations.md) Section 3).
+
+### 4.7 Task Ledger
+
+The CCR keeps no record of tasks, so a client whose call to an Aggregator broke cannot ask the CCR what happened. The Aggregator keeps a ledger instead and answers from it.
+
+- On accepting a task under Section 4.4, the Aggregator MUST write a ledger entry for it before it dispatches the task: the `task_id`, the submitting client's SPIFFE ID, its own `instance_id` and `epoch`, and the time of acceptance. When the task reaches its final outcome the Aggregator MUST record the `TaskResult` in the entry, including outcomes it produced itself (`deadline_exceeded`, `no_eligible_worker`, `worker_lost`). The first outcome recorded stands.
+- `TaskIntake.GetTaskStatus` returns the phase of a task (`TASK_PHASE_IN_FLIGHT` or `TASK_PHASE_COMPLETED`) and, once completed, the final `TaskResult`. Only the client that submitted the task MAY ask. For any other caller, and for a task the ledger does not hold, the Aggregator MUST answer `NOT_FOUND`, so that an unauthorized caller cannot learn whether a task exists.
+- Any instance of the zone that can read the ledger MAY answer `GetTaskStatus`, so a client can ask another instance when the one it used is unreachable. Only the instance that accepted a task writes its entry. The ledger is not an exception to the rule that instances share no state that would let two of them act on one session ([05-operations](05-operations.md) Section 4.2): it records outcomes and never drives dispatch.
+- The Aggregator MUST keep a completed entry for at least the ledger retention ([05-operations](05-operations.md) Section 1.1, default 15 minutes) and MAY then discard it. It MUST NOT discard an entry for a task in flight. It MUST bound the number of completed entries it keeps and discard the oldest first when the bound is reached.
+- A completed entry holds the task's result, which is application data. The ledger MUST be given the protection the Aggregator gives payloads, including access control that admits only the instances of the zone, and a durable backing SHOULD encrypt it at rest. The ledger MUST NOT hold the task's payload.
+- **Durability.** An implementation MUST provide the ledger and `GetTaskStatus`. It MAY keep the ledger in memory, which survives a client's disconnect and not an Aggregator restart. A deployment that needs the answer to survive a restart SHOULD back the ledger with a durable store local to the region. [NATS JetStream](https://docs.nats.io/nats-concepts/jetstream) is the recommended store, because the regional bus is already NATS; one stream per zone, keyed by `task_id`, with the retention above as the stream's maximum age. The store is a deployment choice and is not negotiated.
+- **Recovery.** An instance with a durable ledger MUST, when it starts and has attached, end every entry still in flight that an earlier run of the same `instance_id` wrote. It MUST record `TASK_STATUS_FAILED` with error code `aggregator_lost` and `retryable` set, because the Worker sessions of the earlier run ended with it ([05-operations](05-operations.md) Section 4.2). The client then learns a definite outcome.
+- The ledger is local to a region. A client reaches it through the Aggregator's `TaskIntake` service, not through the CCR.
 
 ## 5. Version and Feature Negotiation
 
@@ -253,11 +267,11 @@ Calls on the services return gRPC status codes with these meanings. An implement
 |--------|----------|
 | `INVALID_ARGUMENT` | A malformed message, an invalid `task_digest` or capability map, a `task_id` that does not match the voucher, an `attempt` greater than 1, a size or capability limit exceeded. |
 | `ALREADY_EXISTS` | A `task_id` already in flight at the Aggregator. |
-| `NOT_FOUND` | An administrative lookup for an unknown identity, where the response has no `found` field. |
+| `NOT_FOUND` | An administrative lookup for an unknown identity, where the response has no `found` field; `GetTaskStatus` for a task the ledger does not hold or that another client submitted (Section 4.7). |
 | `PERMISSION_DENIED` | The caller is not authorized; a Worker registration failed (Section 2.4); a voucher failed a check of Section 4.4 or was already used. |
 | `FAILED_PRECONDITION` | No common version; an instance that is not attached; a write sent to a CCR that is not the Primary. |
 | `UNAVAILABLE` | No Primary is reachable; no Aggregator instance serves a matching Worker (reason `no_eligible_worker`, Section 4.1); an Aggregator instance is unreachable or failed during a call. The caller SHOULD retry with the backoff of [05-operations](05-operations.md) Section 6. |
-| `RESOURCE_EXHAUSTED` | A rate or concurrency limit ([05-operations](05-operations.md) Section 5). |
+| `RESOURCE_EXHAUSTED` | A rate or concurrency limit ([05-operations](05-operations.md) Section 5); an Aggregator's voucher memory is full (Section 4.4). |
 
 Errors produced for a task are carried in `TaskResult`, not as a status (Section 4.6). A `SubmitTask` call that reaches a Worker's outcome returns status `OK` even when the task failed.
 
@@ -269,6 +283,25 @@ Errors produced for a task are carried in `TaskResult`, not as a status (Section
 - A voucher is a capability, so it is constrained on every axis a thief or a replay could use: it is bound to one client identity, one Aggregator instance and epoch, one task digest and one lifetime, and it is accepted once. Stealing a voucher is of no use without the client's credential, and a leaked one cannot carry a different task.
 - The CCR sees routing metadata and a digest, never a payload. It can still decide which tasks may be sent and where, so a compromised CCR can authorize work it should not; it cannot read or alter the tasks themselves. Payload confidentiality from the Aggregator needs end-to-end encryption at the application layer, since the control plane treats payloads as opaque.
 - A voucher check depends on wall-clock time. The skew tolerance bounds the window in which a clock fault could let an expired voucher through or reject a valid one.
+- The voucher memory fails closed. Filling it denies service to new submissions but never lets a voucher be accepted twice, which is why it caps one client's share and does not evict live entries.
+- The task ledger keeps results at rest for the retention period. It widens the exposure of results beyond the call that carried them, so it has the same access control as payloads in flight and an encrypted durable backing.
+
+## 9. Future Work: Overlapping SVID Validity (Informational)
+
+**This section is a note, not a requirement. Nothing here is normative in this version, and no implementation is expected to follow it.**
+
+Today a credential rotation ends a Worker's session: the replacement connection registers again, and the tasks on the old session are reassigned or failed ([01-identity](01-identity.md) Section 5, [05-operations](05-operations.md) Section 6). A long-running task can therefore be lost to a routine rotation. A later version should remove that with a grace period in which two credentials are valid at once. The notes below record what such a version would need, so that the design is not rediscovered.
+
+TODO for a later version:
+
+1. **Two SVIDs at once.** A component should be able to hold the expiring SVID and its renewal together for an overlap window, and peers should accept either of them for that component's SPIFFE ID during the window. The window should be bounded, for example by a fraction of the SVID lifetime, so that the one-hour ceiling on credential life still holds in effect.
+2. **Make before break.** A Worker should open the replacement connection with the new SVID while the old one still carries traffic, hand the session over, and only then close the old connection. In-flight tasks should stay with the session. This needs a session-handover exchange that proves the two connections belong to one Worker, for example a handover token the old session issues and the new session presents, bound to the new SVID and used once.
+3. **Drain on the expiring credential.** After the handover, results of tasks still running on the expiring credential should be accepted on the old connection until the tasks finish or the window ends, and new tasks should go only to the new connection. A Worker that cannot finish by the end of the window should fail the task visibly, not leave it to be reassigned silently.
+4. **Revocation must still bite.** Revoking an identity should end both connections at once. An overlap window must not become a way to outlive a revocation, so the revocation path has to name the identity and not a single connection.
+5. **Aggregators and the CCR.** The same overlap should apply to their credentials. A voucher signed by the CCR's expiring SVID should stay valid for its short lifetime, which the rule that a voucher lifetime does not exceed its signer's remaining life ([Section 4.3](#43-voucher-and-signature)) would need to be relaxed or re-expressed for.
+6. **Negotiation.** The capability should be advertised as a feature ([Section 5](#5-version-and-feature-negotiation)), so that peers that do not support it keep the current behaviour.
+
+Open questions: how a verifier learns that a second SVID is legitimate without a new round trip to the CCR; whether a handover token can be replayed across Aggregator instances of a zone; and how the overlap interacts with the single-session rule of [02-topology](02-topology.md) Section 5.4. See also the residual risk in [06-threat-model](06-threat-model.md).
 
 [RFC 2119]: https://www.rfc-editor.org/rfc/rfc2119
 [RFC 8174]: https://www.rfc-editor.org/rfc/rfc8174

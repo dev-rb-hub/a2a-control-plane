@@ -21,7 +21,7 @@ It is the infrastructure layer *underneath* agent-to-agent application protocols
 ## Where it stands
 
 - Specification drafts 01-06 (identity, topology, protocols, control API, operations, threat model), wire schemas for state, tasks, control, zone reports, registration, submission and administration plus the gRPC service definitions, and a Kubernetes NetworkPolicy reference.
-- Python SDK: the full protocol runs in-process (registry, aggregators, workers, ACLs, registration relay and negotiation, snapshot recovery, task vouchers and selection, reassignment, cancellation, fencing) with 284 tests and CI. See [sdk/python/README.md](sdk/python/README.md).
+- Python SDK: the full protocol runs in-process (registry, aggregators, workers, ACLs, registration relay and negotiation, snapshot recovery, task vouchers and selection, reassignment, cancellation, fencing) with 313 tests and CI. See [sdk/python/README.md](sdk/python/README.md).
 - An `a2a-sdk` bridge runs A2A agents as workers. A CrewAI integration exists only as a scaffold.
 - Nothing runs over a real network yet. That is the main gap between "specified and simulated" and "usable".
 
@@ -37,6 +37,16 @@ Tracked as GitHub milestones; each issue names the files to change and what done
 | **M4 Production readiness** | Outside users can deploy and extend it | [#13](https://github.com/dev-rb-hub/a2a-control-plane/issues/13), [#14](https://github.com/dev-rb-hub/a2a-control-plane/issues/14), [#15](https://github.com/dev-rb-hub/a2a-control-plane/issues/15) |
 
 Dependency order: M1 and the M2 groundwork (#3, #4, #5) can proceed in parallel; the transports (#6, #7) need all of them. M3 items only need the in-memory bus, so they can start at any time.
+
+### Near-term engineering
+
+Follow-ups to the voucher-based task origination in PR #20, in the order they should land:
+
+| Item | State |
+|------|-------|
+| **Task ledger.** Every Aggregator records the tasks it accepts and how they ended, and answers `GetTaskStatus`, so a client whose call broke can learn the outcome from its own region. The CCR stays blind to task execution. | Specified (spec 04 section 4.7). The in-memory ledger is implemented. A durable ledger on NATS JetStream, one stream per zone, is the recommended backing and is not built: [#21](https://github.com/dev-rb-hub/a2a-control-plane/issues/21). |
+| **Voucher replay protection.** A memory-bounded store of spent voucher ids that holds each id until the voucher expires. | Implemented as a bounded store that fails closed when full. It is deliberately not an LRU: evicting a live entry would let that voucher be replayed. |
+| **Overlapping SVIDs.** A grace period in which two credentials are valid, so a rotation does not end long-running tasks. | Sketched as an informational note (spec 04 section 9). Needs a session-handover design before it can be specified: [#22](https://github.com/dev-rb-hub/a2a-control-plane/issues/22). |
 
 ## How success is judged
 

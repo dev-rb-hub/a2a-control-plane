@@ -16,7 +16,12 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from google.protobuf.message import DecodeError
 
 from a2a_control_plane._proto.registration_pb2 import RegistrationAdmission, RegistrationChallenge
-from a2a_control_plane._proto.submission_pb2 import SignedTaskVoucher
+from a2a_control_plane._proto.submission_pb2 import (
+    TASK_PHASE_COMPLETED,
+    TASK_PHASE_IN_FLIGHT,
+    GetTaskStatusResponse,
+    SignedTaskVoucher,
+)
 from a2a_control_plane.bus import MAX_MESSAGE_BYTES, TYPE_HEADER, InMemoryBus, Message, Session
 from a2a_control_plane.control import (
     CONTROL_TYPE,
@@ -38,7 +43,9 @@ from a2a_control_plane.delta import (
 )
 from a2a_control_plane.heartbeat import AdaptiveHeartbeat
 from a2a_control_plane.identity import Role, SpiffeId
+from a2a_control_plane.ledger import InMemoryTaskLedger, LedgerEntry, TaskLedger
 from a2a_control_plane.registry import PROTOCOL_VERSIONS, Registry
+from a2a_control_plane.replay import ReplayStoreFull, VoucherReplayStore
 from a2a_control_plane.reports import (
     ZONE_REPORT_TYPE,
     WorkerStateChange,
@@ -146,6 +153,8 @@ class Aggregator:
         voucher_keys: VoucherKeys | None = None,
         voucher_skew: float = 5.0,
         wall_clock_ns: Callable[[], int] = time.time_ns,
+        replay_store: VoucherReplayStore | None = None,
+        ledger: TaskLedger | None = None,
         on_result: ResultCallback | None = None,
         on_task_failed: TaskFailedCallback | None = None,
         on_reassign: ReassignCallback | None = None,
@@ -174,7 +183,8 @@ class Aggregator:
         self._voucher_keys = voucher_keys
         self._voucher_skew_ns = round(voucher_skew * 1_000_000_000)
         self._wall_clock_ns = wall_clock_ns
-        self._seen_vouchers: dict[bytes, int] = {}  # voucher_id -> when it can be forgotten
+        self._replay = replay_store if replay_store is not None else VoucherReplayStore()
+        self._ledger: TaskLedger = ledger if ledger is not None else InMemoryTaskLedger()
         self.vouchers_refused = 0
         self._workers: dict[str, _Entry] = {}
         self._flights: dict[str, _Flight] = {}
@@ -199,6 +209,7 @@ class Aggregator:
         )
         self.epoch = attached.epoch
         self.features = tuple(attached.selected_features)
+        self._ledger.recover(self.instance_id, self._wall_clock_ns())  # spec 04, section 4.7
         self._publish_report(self._snapshot_report())  # the first report is always a snapshot
 
     # --- registration relay (T1-T3; spec 04, section 2) -----------------------------------
@@ -386,27 +397,51 @@ class Aggregator:
 
         ``client`` is the SPIFFE ID of the authenticated connection. ``on_result`` receives the
         final outcome once. Raises PermissionError if the voucher or the client is not acceptable
-        and ValueError for a malformed task; a refused voucher is not consumed.
+        and ValueError for a malformed task; ReplayStoreFull means the voucher memory is full and a
+        transport answers RESOURCE_EXHAUSTED. A refused voucher is not consumed.
         """
         try:
             self._check_voucher(client, signed, task)
-        except (PermissionError, ValueError):
+        except (PermissionError, ValueError, ReplayStoreFull):
             self.vouchers_refused += 1
             raise
         placed = Task()
         placed.CopyFrom(task)
         placed.attempt = 1
+        # Recorded before dispatch, so a crash after dispatch still leaves a trace (spec 04, 4.7).
+        self._ledger.accept(
+            LedgerEntry(
+                placed.task_id, str(client), self.instance_id, self.epoch, self._wall_clock_ns()
+            )
+        )
+
+        def deliver(result: TaskResult) -> None:
+            self._ledger.complete(placed.task_id, result, self._wall_clock_ns())
+            on_result(result)
+
         if placed.deadline_ns and self._wall_clock_ns() > placed.deadline_ns:
-            on_result(rejected(placed, "deadline_exceeded", retryable=False))
+            deliver(rejected(placed, "deadline_exceeded", retryable=False))
             return
         entry = self._pick_worker(set(), placed)
         if entry is None:  # the CCR's view was stale or the Worker has since filled up
-            on_result(rejected(placed, "no_eligible_worker", retryable=True))
+            deliver(rejected(placed, "no_eligible_worker", retryable=True))
             return
         agent_id = entry.identity.agent_id
         assert agent_id is not None
-        self._register_flight(entry, placed, {agent_id}, client=client, on_result=on_result)
+        self._register_flight(entry, placed, {agent_id}, client=client, on_result=deliver)
         self._publish_task(agent_id, placed)
+
+    def task_status(self, client: SpiffeId, task_id: str) -> GetTaskStatusResponse | None:
+        """``TaskIntake.GetTaskStatus``: what became of a task, for the client that submitted it.
+
+        Returns None for an unknown task and for someone else's task alike.
+        """
+        entry = self._ledger.get(task_id, self._wall_clock_ns())
+        if entry is None or entry.client != str(client):
+            return None
+        if entry.result is None:
+            return GetTaskStatusResponse(phase=TASK_PHASE_IN_FLIGHT)
+        return GetTaskStatusResponse(phase=TASK_PHASE_COMPLETED, result=entry.result)
 
     def cancel_task(self, client: SpiffeId, task_id: str, reason: str = "") -> bool:
         """``TaskIntake.CancelTask``: only the client that submitted a task may cancel it."""
@@ -447,12 +482,9 @@ class Aggregator:
             raise PermissionError("task does not match the voucher")
         if task.task_id in self._flights:
             raise TaskAlreadyInFlight(f"task_id {task.task_id!r} is already in flight")
-        self._seen_vouchers = {
-            voucher_id: until for voucher_id, until in self._seen_vouchers.items() if until >= now
-        }
-        if voucher.voucher_id in self._seen_vouchers:
-            raise PermissionError("voucher was already used")
-        self._seen_vouchers[voucher.voucher_id] = voucher.expires_at_ns + self._voucher_skew_ns
+        self._replay.consume(
+            voucher.voucher_id, str(client), voucher.expires_at_ns + self._voucher_skew_ns, now
+        )
 
     # --- dispatch, reassignment, cancellation (spec 03, section 7) ------------------------
 

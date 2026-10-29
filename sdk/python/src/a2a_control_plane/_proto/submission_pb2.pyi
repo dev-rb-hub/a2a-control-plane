@@ -1,11 +1,21 @@
 from a2a_control_plane._proto import task_pb2 as _task_pb2
 from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from collections.abc import Iterable as _Iterable, Mapping as _Mapping
 from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
+
+class TaskPhase(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    TASK_PHASE_UNSPECIFIED: _ClassVar[TaskPhase]
+    TASK_PHASE_IN_FLIGHT: _ClassVar[TaskPhase]
+    TASK_PHASE_COMPLETED: _ClassVar[TaskPhase]
+TASK_PHASE_UNSPECIFIED: TaskPhase
+TASK_PHASE_IN_FLIGHT: TaskPhase
+TASK_PHASE_COMPLETED: TaskPhase
 
 class IssueTaskVoucherRequest(_message.Message):
     __slots__ = ("zone_id", "required_capabilities", "task_digest")
@@ -87,6 +97,20 @@ class CancelTaskResponse(_message.Message):
     ACCEPTED_FIELD_NUMBER: _ClassVar[int]
     accepted: bool
     def __init__(self, accepted: bool = ...) -> None: ...
+
+class GetTaskStatusRequest(_message.Message):
+    __slots__ = ("task_id",)
+    TASK_ID_FIELD_NUMBER: _ClassVar[int]
+    task_id: str
+    def __init__(self, task_id: _Optional[str] = ...) -> None: ...
+
+class GetTaskStatusResponse(_message.Message):
+    __slots__ = ("phase", "result")
+    PHASE_FIELD_NUMBER: _ClassVar[int]
+    RESULT_FIELD_NUMBER: _ClassVar[int]
+    phase: TaskPhase
+    result: _task_pb2.TaskResult
+    def __init__(self, phase: _Optional[_Union[TaskPhase, str]] = ..., result: _Optional[_Union[_task_pb2.TaskResult, _Mapping]] = ...) -> None: ...
 
 class ZoneSnapshotRequest(_message.Message):
     __slots__ = ("zone_id",)

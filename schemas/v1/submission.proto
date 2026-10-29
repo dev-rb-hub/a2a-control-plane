@@ -101,6 +101,27 @@ message CancelTaskResponse {
   bool accepted = 1;
 }
 
+// Client to Aggregator: ask what became of a task this client submitted, for example after the
+// connection broke mid-call (spec/04-control-api.md, section 4.7).
+message GetTaskStatusRequest {
+  string task_id = 1;
+}
+
+message GetTaskStatusResponse {
+  TaskPhase phase = 1;
+
+  // Set when phase is TASK_PHASE_COMPLETED: the final outcome, as SubmitTask would have returned.
+  TaskResult result = 2;
+}
+
+enum TaskPhase {
+  TASK_PHASE_UNSPECIFIED = 0;
+  // Accepted by the Aggregator and not yet finished.
+  TASK_PHASE_IN_FLIGHT = 1;
+  // Finished; `result` holds the final outcome.
+  TASK_PHASE_COMPLETED = 2;
+}
+
 // CCR to Aggregator: produce a full snapshot report (spec/05-operations.md, section 2.3).
 message ZoneSnapshotRequest {
   string zone_id = 1;

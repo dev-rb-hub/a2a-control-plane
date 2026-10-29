@@ -63,7 +63,9 @@ flowchart LR
 | Result or state from the wrong Worker | The Aggregator checks the sender against the holder and the subject against the identity. | |
 | Stolen or leaked voucher | Bound to one client identity, one instance and epoch, one task digest, one lifetime, and accepted once ([04](04-control-api.md) 4.4). | A thief needs the client's credential as well. |
 | Voucher used for a different task | The task digest covers kind, content type, payload, deadline and required capabilities. | |
-| Voucher replay | `voucher_id` is remembered until expiry plus skew; the epoch voids vouchers across a restart. | An instance that restarts forgets `voucher_id`s, but its new epoch voids every earlier voucher. |
+| Voucher replay | `voucher_id` is remembered until expiry plus skew in a bounded store that fails closed; the epoch voids vouchers across a restart. | A full store denies service to new submissions; it never accepts a voucher twice. The store is not an LRU, because evicting a live entry would allow a replay. |
+| Filling the voucher memory | A global bound, a per-client share, and the voucher's short lifetime ([04](04-control-api.md) 4.4). | One client cannot take the whole store, but several colluding clients can fill it until their vouchers expire. |
+| Reading another client's result | The ledger answers only the submitter; everyone else gets `NOT_FOUND` ([04](04-control-api.md) 4.7). | The ledger holds results at rest for the retention period; protect it like payloads. |
 | Redirecting a voucher to another instance or zone | The voucher names the instance and epoch, and the client checks the Aggregator's SPIFFE ID. | |
 | Forged voucher | The signature is verified against the CCR's SVID chain, validated to the trust bundle. | |
 | Task submitted without the CCR's authorization | The Aggregator accepts a client's task only under a valid voucher. | A control component inside the Aggregator's trust boundary is not a client. |
@@ -85,10 +87,10 @@ flowchart LR
 
 1. **Aggregator compromise is severe for its zone.** The design confines it to the zone; it does not reduce what it can do within the zone.
 2. **The CCR is a single point of authorization.** It does not see payloads, but a compromised CCR can authorize work and route it. Its records are eventually consistent, so a voucher can point at an instance that no longer has a matching Worker; the Aggregator's own check catches this.
-3. **No session resumption.** An SVID rotation or an instance loss ends a Worker's session and its tasks ([05](05-operations.md) 6).
+3. **No session resumption.** An SVID rotation or an instance loss ends a Worker's session and its tasks ([05](05-operations.md) 6). A grace period with overlapping SVIDs is sketched, not specified, in [04](04-control-api.md) 9.
 4. **Instances of one zone share one identity.** A compromised instance can impersonate another instance of the same zone.
 5. **Revocation is bounded by SVID lifetime** if the connection cannot be closed (for example, because the owning instance is unreachable).
-6. **Exactly-once execution is not provided.** Tasks can run more than once or in part ([05](05-operations.md) 3). A client whose call to an Aggregator fails cannot tell whether the task ran.
+6. **Exactly-once execution is not provided.** Tasks can run more than once or in part ([05](05-operations.md) 3). A client whose call to an Aggregator fails can ask the Aggregator's task ledger what became of the task; with an in-memory ledger that answer is lost if the Aggregator restarts.
 7. **Federation between trust domains is out of scope** ([01](01-identity.md) 2.1).
 8. **Denial of service** by a flood of unauthenticated connections is a transport and network concern that this document does not address. Aggregators are now reachable by clients as well as by Workers and the CCR, so their network policy matters more ([reference](../reference/k8s-network-isolation.yaml)).
 9. **The reference SDK is a simulation.** Its development CA and in-memory bus do not provide the transport security this model relies on.

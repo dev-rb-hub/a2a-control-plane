@@ -10,6 +10,7 @@ from a2a_control_plane._proto import (
     registration_pb2,
     services_pb2,
     submission_pb2,
+    task_pb2,
     zone_report_pb2,
 )
 from a2a_control_plane.tasks import make_task
@@ -71,6 +72,11 @@ MESSAGES: list[Message] = [
     ),
     submission_pb2.CancelTaskRequest(task_id="t1", reason="no longer needed"),
     submission_pb2.CancelTaskResponse(accepted=True),
+    submission_pb2.GetTaskStatusRequest(task_id="t1"),
+    submission_pb2.GetTaskStatusResponse(
+        phase=submission_pb2.TASK_PHASE_COMPLETED,
+        result=task_pb2.TaskResult(task_id="t1", status=task_pb2.TASK_STATUS_SUCCEEDED, attempt=1),
+    ),
     submission_pb2.ZoneSnapshotRequest(zone_id="z1"),
     admin_pb2.RevokeRequest(spiffe_id="spiffe://example.org/zone/z1/agent/w1", reason="r"),
     admin_pb2.RevokeResponse(found=True),
@@ -114,7 +120,7 @@ def test_services_expose_the_methods_the_spec_names() -> None:
         "Registration": {"Attach", "Detach", "BeginRegistration", "CompleteRegistration"},
         "Admin": {"RevokeIdentity", "ListWorkers"},
         "TaskSubmission": {"IssueTaskVoucher"},
-        "TaskIntake": {"SubmitTask", "CancelTask"},
+        "TaskIntake": {"SubmitTask", "CancelTask", "GetTaskStatus"},
         "ZoneControl": {"RequestZoneSnapshot", "RevokeWorker"},
     }
 

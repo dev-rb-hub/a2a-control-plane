@@ -40,6 +40,10 @@ service TaskIntake {
   // Completes when the task reaches its final outcome (spec/03-protocols.md, section 7.3).
   rpc SubmitTask(SubmitTaskRequest) returns (TaskResult);
   rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse);
+
+  // Answers from the Aggregator's task ledger (spec/04-control-api.md, section 4.7). Only the
+  // client that submitted the task gets an answer; for any other caller the task does not exist.
+  rpc GetTaskStatus(GetTaskStatusRequest) returns (GetTaskStatusResponse);
 }
 
 // Served by each Aggregator instance to the CCR.

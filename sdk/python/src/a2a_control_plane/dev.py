@@ -20,6 +20,7 @@ from a2a_control_plane.bus import MAX_MESSAGE_BYTES, InMemoryBus
 from a2a_control_plane.heartbeat import AdaptiveHeartbeat
 from a2a_control_plane.identity import SpiffeId
 from a2a_control_plane.registry import CapabilityAdmission, ClientAuthorizer, Registry
+from a2a_control_plane.replay import VoucherReplayStore
 from a2a_control_plane.tasks import Task, TaskResult, task_digest
 from a2a_control_plane.voucher import TaskVoucher
 from a2a_control_plane.worker import WorkerClient
@@ -104,6 +105,7 @@ class DevCluster:
         max_message_bytes: int = MAX_MESSAGE_BYTES,
         capability_policy: CapabilityAdmission | None = None,
         client_authorizer: ClientAuthorizer | None = None,
+        replay_max_entries: int = 100_000,
     ) -> None:
         self.trust_domain = trust_domain
         self.clock = ManualClock()
@@ -141,6 +143,7 @@ class DevCluster:
                 endpoint=f"aggregator.{zone}.local:50051",
                 voucher_keys=self.ca.public_key_for,
                 wall_clock_ns=self.wall,
+                replay_store=VoucherReplayStore(replay_max_entries),
             )
             for zone in zones
         }

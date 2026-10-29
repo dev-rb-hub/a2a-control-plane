@@ -26,6 +26,8 @@ Every value below MUST be configurable. Where the table says "default", an imple
 | Aggregator attachment timeout | 30 s | [04-control-api](04-control-api.md) Section 3 |
 | Task voucher lifetime | 30 s | [04-control-api](04-control-api.md) Section 4.1 |
 | Voucher clock skew tolerance | 5 s | [04-control-api](04-control-api.md) Section 4.4 |
+| Voucher memory at an Aggregator | 100,000 entries, at most a quarter per client | [04-control-api](04-control-api.md) Section 4.4 |
+| Task ledger retention of completed entries / entries kept | 15 min / 10,000 | [04-control-api](04-control-api.md) Section 4.7 |
 | Reconnect backoff (initial, factor, maximum) | 1 s, 2, 60 s | Section 6 |
 
 ## 2. State Consistency and Recovery
@@ -140,7 +142,7 @@ Further requirements:
 | H1 | A Worker session is owned by exactly one instance. Only that instance dispatches tasks to the Worker or processes its messages. |
 | H2 | A task has one holder (Section 3). The CCR assigns every submitted `task_id` from a secure random source ([04-control-api](04-control-api.md) Section 4.1), and an Aggregator accepts a voucher once and refuses a `task_id` already in flight ([04-control-api](04-control-api.md) Section 4.4), so no two instances can hold the same `task_id`. |
 | H3 | The instance owning a session is recorded by the CCR at admission, and the CCR ignores reports about a Worker from any other instance. |
-| H4 | When an instance is lost, every session it owned ends, and every task in flight on it ends with a transport error on the submitting client's call. The CCR keeps no record of tasks and reports nothing about them. Nothing is migrated between instances. A voucher is void at any other instance, so the clients' vouchers cannot be redirected. |
+| H4 | When an instance is lost, every session it owned ends. Every task in flight on it ends with a transport error on the submitting client's call, and the client learns the outcome from the task ledger ([04-control-api](04-control-api.md) Section 4.7): a durable ledger lets a restarted instance record `aggregator_lost`. The CCR keeps no record of tasks and reports nothing about them. Nothing is migrated between instances. A voucher is void at any other instance, so the clients' vouchers cannot be redirected. |
 
 Further requirements:
 
@@ -154,7 +156,7 @@ Further requirements:
 - A Worker MUST NOT send a result that exceeds the limit. A Worker whose result would do so MUST send `TASK_STATUS_FAILED` with error code `result_too_large` and `retryable` false instead.
 - Capability maps are limited as in [03-protocols](03-protocols.md) Section 5.2.
 - An Aggregator MUST NOT dispatch a task to a Worker that already holds the maximum number of in-flight tasks. Such a Worker is not eligible.
-- An implementation SHOULD apply a per-identity limit on messages and registrations, and SHOULD answer `RESOURCE_EXHAUSTED` when it is exceeded. An Aggregator SHOULD likewise bound the number of vouchers it remembers ([04-control-api](04-control-api.md) Section 4.4) and the submissions per client, and a CCR SHOULD limit the voucher requests per client.
+- An implementation SHOULD apply a per-identity limit on messages and registrations, and SHOULD answer `RESOURCE_EXHAUSTED` when it is exceeded. An Aggregator MUST bound the memory in which it remembers spent vouchers, and MUST fail closed when it is full, without evicting live entries ([04-control-api](04-control-api.md) Section 4.4). A CCR SHOULD limit the voucher requests per client.
 - An Aggregator SHOULD limit the registrations in progress at one time, so that a restart of many Workers does not exhaust it.
 - By default a task that has no eligible Worker is rejected, not queued. An implementation MAY queue it until its deadline. A queued task MUST remain subject to every rule of [03-protocols](03-protocols.md) Section 7.
 
@@ -164,7 +166,7 @@ Further requirements:
 - Jitter is REQUIRED. An Aggregator restart makes every Worker reconnect at the same moment, and without jitter that burst defeats the low-noise design.
 - Before its SVID expires a component MUST replace its connections with new ones that use the renewed SVID ([01-identity](01-identity.md) Section 5). A Worker's replacement connection is a new session: it registers again ([04-control-api](04-control-api.md) Section 2.6).
 - A Worker SHOULD replace its connection while it holds no tasks. Tasks in flight when the old session ends are reassigned or failed as in T10.
-- Session resumption (continuing a session over a new connection without re-registration) is not defined in this version.
+- Session resumption (continuing a session over a new connection without re-registration) is not defined in this version. A grace period with overlapping SVIDs is sketched, informatively, in [04-control-api](04-control-api.md) Section 9.
 
 ## 7. Observability and Audit
 

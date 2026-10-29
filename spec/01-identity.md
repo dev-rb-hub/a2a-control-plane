@@ -49,7 +49,7 @@ Every participant (Registry, Aggregator, Worker, Client) MUST hold a [SPIFFE] id
 |-----------|-------------|
 | X.509-SVID lifetime | MUST NOT exceed 1 hour. |
 | Rotation | Components MUST begin renewal no later than 50% of the SVID lifetime. |
-| Rotation behavior | A connection MAY continue to carry traffic after the SVID it was established with is renewed, but MUST be replaced by a new connection that uses the renewed SVID before the old SVID expires. The replacement of a Worker's connection is a new session ([04-control-api](04-control-api.md) Section 2.6): the Worker registers again, and tasks in flight on the old session are reassigned or failed ([05-operations](05-operations.md) Section 6). |
+| Rotation behavior | A connection MAY continue to carry traffic after the SVID it was established with is renewed, but MUST be replaced by a new connection that uses the renewed SVID before the old SVID expires. The replacement of a Worker's connection is a new session ([04-control-api](04-control-api.md) Section 2.6): the Worker registers again, and tasks in flight on the old session are reassigned or failed ([05-operations](05-operations.md) Section 6). A grace period with overlapping SVIDs, which would avoid this, is sketched in [04-control-api](04-control-api.md) Section 9 and is not part of this version. |
 | Trust bundle updates | Components MUST accept bundle updates without restart. |
 | Expiry | A component whose SVID expires without renewal MUST stop sending traffic, and its peers MUST treat it as `Unregistered` (see [02-topology](02-topology.md) T10). |
 
