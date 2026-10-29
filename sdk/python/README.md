@@ -8,11 +8,18 @@ This package is independent of, and not affiliated with, the Linux Foundation Ag
 
 | Layer | Modules | Status |
 |-------|---------|--------|
-| Core (pure logic, no I/O) | `tokens`, `identity`, `subjects`, `state`, `heartbeat`, `delta`, `tasks`, `control`, `reports` | implemented |
+| Core (pure logic, no I/O) | `tokens`, `identity`, `subjects`, `state`, `heartbeat`, `delta`, `tasks`, `control`, `reports`, `backoff` | implemented |
 | Roles over an in-memory bus | `Registry`, `Aggregator`, `WorkerClient`, `InMemoryBus` | implemented |
-| Dev tooling | `DevCA` (Ed25519, not SPIRE), `ManualClock`, `DevCluster` | implemented |
+| Registration relay (CCR as root, Aggregator as intermediary), version and feature negotiation, Aggregator attachment with epochs | spec 04, sections 2, 3, 5 | implemented in process |
+| Sequence numbers, gap detection, snapshot recovery (Worker to Aggregator, Aggregator to CCR), result fencing | spec 05, sections 2, 3 | implemented |
+| Task origination by voucher (the CCR signs a voucher and sees no payload; the client submits to the Aggregator, which checks it), selection by `required_capabilities`, revocation | spec 04, sections 4, 6 | implemented in process |
+| Task ledger and `GetTaskStatus` (in-memory, with recovery of an earlier run's tasks), bounded fail-closed voucher replay store | spec 04, sections 4.4, 4.7 | implemented in process |
+| Limits (message size, capability map, in-flight), self-reported health, registration timeout, reconnect backoff | spec 03, 5.2; spec 05, sections 5, 6 | implemented |
+| Dev tooling | `DevCA` (Ed25519, not SPIRE), `ManualClock`, `DevCluster`, `InMemoryBus.drop_filter` for loss injection | implemented |
 | A2A bridge, worker side | `bridge` (run an `a2a-sdk` agent as a worker; extra `a2a`) | implemented |
-| Registration RPC schema | [#2](https://github.com/dev-rb-hub/a2a-control-plane/issues/2) | planned |
+| gRPC service definitions (`Registration`, `Admin`, `TaskSubmission`, `ZoneControl`) | `schemas/v1/services.proto` ([#2](https://github.com/dev-rb-hub/a2a-control-plane/issues/2)) | schema only; no server or client yet |
+| `recovery.replay` (durable bus), a JetStream-backed durable task ledger, CCR replication and election, Aggregator health checks, `Admin.ListWorkers` over RPC, task queueing, session resumption and overlapping SVIDs (the latter is only sketched in spec 04 section 9), metrics and audit export | spec 04, 05 | specified, not implemented |
+| TLS-bound registration (RFC 9266 channel binding), ECDSA P-256 SVID signatures, and validation of the CCR's SVID chain on a voucher | spec 04, sections 2.3, 4.3 | not implemented: the in-memory transport has no TLS, so the channel binding is empty, `DevCA` signs with Ed25519, and `signer_chain` is not validated |
 | Bus protocol, X.509 dev certificates, async design | [#3](https://github.com/dev-rb-hub/a2a-control-plane/issues/3), [#4](https://github.com/dev-rb-hub/a2a-control-plane/issues/4), [#5](https://github.com/dev-rb-hub/a2a-control-plane/issues/5) | planned |
 | Transports | gRPC + mTLS ([#6](https://github.com/dev-rb-hub/a2a-control-plane/issues/6)), NATS ([#7](https://github.com/dev-rb-hub/a2a-control-plane/issues/7)) | planned |
 | A2A gateway, multi-turn tasks | [#8](https://github.com/dev-rb-hub/a2a-control-plane/issues/8), [#9](https://github.com/dev-rb-hub/a2a-control-plane/issues/9) | planned |
@@ -27,7 +34,7 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) and [AGENTS.md](../../AGENTS.md) to
 .venv\Scripts\python examples\traffic_benchmark.py   # mesh vs hub vs delta + adaptive heartbeats
 ```
 
-Tasks, results, control commands and zone reports use the messages in `schemas/v1` (`task.proto`, `control.proto`, `zone_report.proto`; spec 03, sections 7-9). The aggregator reassigns retryable failures and tasks of lost workers, supports cancellation and heartbeat configuration, and reports zone state to the registry over the bus. Registration challenges are still direct calls because no RPC schema exists yet ([#2](https://github.com/dev-rb-hub/a2a-control-plane/issues/2)).
+Tasks, results, control commands, registration messages and zone reports use the messages in `schemas/v1` (`task.proto`, `control.proto`, `zone_report.proto`, `registration.proto`, `submission.proto`, `admin.proto`; spec 03 sections 7-9 and spec 04). The aggregator reassigns retryable failures and tasks of lost workers, supports cancellation and heartbeat configuration, and reports zone state to the registry over the bus. Clients originate tasks in two steps: `Registry.issue_voucher(client, required_capabilities, task_digest(task))` returns a signed voucher, the CCR-assigned `task_id` and the Aggregator's endpoint, and then `Aggregator.submit_task(client, voucher, task, on_result)` delivers the task. The Aggregator verifies the voucher itself (signature, client, instance and epoch, lifetime, task digest, single use) and `on_result` receives the final outcome. `DevCluster.submit(task)` runs both steps. Registration and the CCR-to-Aggregator calls are direct method calls that mirror the gRPC services in `services.proto`; no gRPC transport exists yet ([#6](https://github.com/dev-rb-hub/a2a-control-plane/issues/6)).
 
 ## A2A bridge
 

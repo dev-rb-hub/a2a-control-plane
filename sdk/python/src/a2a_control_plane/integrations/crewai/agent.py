@@ -18,7 +18,7 @@ class SVIDSigner(Protocol):
     """Signing interface backed by a SPIFFE/SPIRE-managed private key."""
 
     def sign(self, payload: bytes) -> bytes:
-        """Sign a registration challenge without exposing the private key."""
+        """Sign the registration challenge payload (spec 04, 2.3) without exposing the key."""
         ...
 
 
@@ -60,16 +60,17 @@ class A2AWorkerAgent(Agent):
         self._svid_signer = svid_signer
 
     async def register(self) -> None:
-        """Perform the proxied challenge-response admission handshake.
+        """Perform the relayed challenge-response admission handshake (spec 04, section 2).
 
         TODO: Establish the Worker's one long-lived mTLS connection to an
         Aggregator in its own zone and authenticate the peer's SPIFFE identity.
-        Send the requested capability set through the Aggregator; receive the
+        Send a ``RegisterRequest`` through the Aggregator; receive the
         CCR-issued, single-use nonce (at least 128 bits) bound to this Worker's
-        SPIFFE ID; sign it with the current SVID through ``svid_signer``; and
-        return the response through the Aggregator for CCR verification.
-        Respect the challenge timeout, invalidate failed or expired attempts,
-        and publish the initial complete capability delta only after admission.
+        SPIFFE ID; sign the challenge payload with the current SVID through
+        ``svid_signer``; and return the response through the Aggregator for CCR
+        verification. Respect the challenge timeout, invalidate failed or
+        expired attempts, and send the first state message, a snapshot of the
+        admitted capability set, only after admission.
         The Worker must not open a separate connection to the CCR.
         """
         raise NotImplementedError

@@ -89,6 +89,14 @@ def test_invalid_pattern_is_denied_not_raised() -> None:
     assert not may_subscribe(REGISTRY, "a2a..>")
 
 
+def test_clients_have_no_access_to_the_regional_bus() -> None:
+    client = SpiffeId.client(TD, "c1")
+    for pattern in ("a2a.zone.*.aggregator.state", "a2a.zone.>", "a2a.zone.z1.agent.w1.tasks"):
+        assert not may_subscribe(client, pattern)
+    for subject in ("a2a.zone.z1.agent.w1.tasks", "a2a.zone.z1.aggregator.state"):
+        assert not may_publish(client, subject)
+
+
 def test_publish_rules() -> None:
     assert may_publish(WORKER, "a2a.zone.z1.agent.w1.state")
     assert may_publish(WORKER, "a2a.zone.z1.agent.w1.results")

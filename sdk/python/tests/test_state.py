@@ -71,8 +71,8 @@ def test_unlisted_transitions_are_ignored(caplog: pytest.LogCaptureFixture) -> N
 
 def test_only_the_ten_spec_transitions_exist() -> None:
     valid = [(s, e) for s, e in itertools.product(S, E) if next_state(s, e) is not None]
-    # T1-T6, T7 (x2), T8, T9, T10 (x4)
-    assert len(valid) == 14
+    # T1-T6, T7 (x2), T8, T9, T10 (x4), T11
+    assert len(valid) == 15
 
 
 def test_tasks_only_in_idle_or_executing() -> None:

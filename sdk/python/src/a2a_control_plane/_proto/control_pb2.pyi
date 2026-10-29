@@ -6,12 +6,20 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class ControlMessage(_message.Message):
-    __slots__ = ("cancel_task", "heartbeat_config")
+    __slots__ = ("cancel_task", "heartbeat_config", "resync")
     CANCEL_TASK_FIELD_NUMBER: _ClassVar[int]
     HEARTBEAT_CONFIG_FIELD_NUMBER: _ClassVar[int]
+    RESYNC_FIELD_NUMBER: _ClassVar[int]
     cancel_task: CancelTask
     heartbeat_config: HeartbeatConfig
-    def __init__(self, cancel_task: _Optional[_Union[CancelTask, _Mapping]] = ..., heartbeat_config: _Optional[_Union[HeartbeatConfig, _Mapping]] = ...) -> None: ...
+    resync: ResyncRequest
+    def __init__(self, cancel_task: _Optional[_Union[CancelTask, _Mapping]] = ..., heartbeat_config: _Optional[_Union[HeartbeatConfig, _Mapping]] = ..., resync: _Optional[_Union[ResyncRequest, _Mapping]] = ...) -> None: ...
+
+class ResyncRequest(_message.Message):
+    __slots__ = ("last_applied_sequence",)
+    LAST_APPLIED_SEQUENCE_FIELD_NUMBER: _ClassVar[int]
+    last_applied_sequence: int
+    def __init__(self, last_applied_sequence: _Optional[int] = ...) -> None: ...
 
 class CancelTask(_message.Message):
     __slots__ = ("task_id", "reason")

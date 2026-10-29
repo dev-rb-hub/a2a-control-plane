@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package a2a.controlplane.v1;
+
+import "zone_report.proto";
+
+option go_package = "github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1";
+option java_multiple_files = true;
+option java_package = "io.github.devrbhub.a2acontrolplane.v1";
+option csharp_namespace = "A2A.ControlPlane.V1";
+
+// Administrative operations on the CCR (spec/04-control-api.md, section 6).
+
+message RevokeRequest {
+  // SPIFFE ID of a Worker or an Aggregator.
+  string spiffe_id = 1;
+
+  // Recorded in the audit log. MUST NOT contain secrets.
+  string reason = 2;
+}
+
+message RevokeResponse {
+  // False if the identity was not known to the CCR.
+  bool found = 1;
+}
+
+message ListWorkersRequest {
+  // Empty lists every zone.
+  string zone_id = 1;
+}
+
+message WorkerInfo {
+  string spiffe_id = 1;
+  string zone_id = 2;
+  string agent_id = 3;
+  WorkerState state = 4;
+  map<string, string> capabilities = 5;
+
+  // Aggregator instance that owns the Worker's session.
+  string instance_id = 6;
+  string session_id = 7;
+}
+
+message ListWorkersResponse {
+  repeated WorkerInfo workers = 1;
+}

@@ -18,7 +18,8 @@ message AgentStateDelta {
   // Unique agent identifier; MUST match the agent component of the sender's SPIFFE ID.
   string agent_id = 1;
 
-  // Unix time in nanoseconds when the change was observed. Used for ordering.
+  // Unix time in nanoseconds when the change was observed. Informational: receivers order and
+  // detect loss with `sequence`, not with this field.
   uint64 timestamp_ns = 2;
 
   // Zone identifier; MUST match the zone component of the sender's SPIFFE ID.
@@ -30,4 +31,15 @@ message AgentStateDelta {
   // OpenTelemetry context, compact binary form: version(1) + trace-id(16) + span-id(8) + flags(1).
   // Omit when there is no active trace.
   bytes trace_context = 5;
+
+  // Per-session sequence number, starting at 1 for the first message after admission and
+  // increasing by exactly 1 for every message the Worker sends, heartbeats included
+  // (spec/05-operations.md, section 2). In a coalesced delta inside a ZoneStateReport it is the
+  // highest Worker sequence number the delta covers, so it only ever increases.
+  uint64 sequence = 6;
+
+  // When true, changed_capabilities is the Worker's COMPLETE capability set and receivers MUST
+  // replace their view with it. Sent as the first message of a session and in answer to a
+  // ResyncRequest (spec/05-operations.md, section 2).
+  bool snapshot = 7;
 }

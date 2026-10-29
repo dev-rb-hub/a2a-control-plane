@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package a2a.controlplane.v1;
+
+option go_package = "github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1";
+option java_multiple_files = true;
+option java_package = "io.github.devrbhub.a2acontrolplane.v1";
+option csharp_namespace = "A2A.ControlPlane.V1";
+
+// Worker admission and Aggregator attachment (spec/04-control-api.md, sections 2 and 3).
+//
+// The CCR is the root of trust for admission. The Aggregator is an intermediary: it relays the
+// exchange and vouches for the transport, but it never issues or validates a challenge.
+
+// Sent by a Worker to its Aggregator and forwarded UNCHANGED, as bytes, to the CCR. The Worker
+// signs a digest of the exact serialized bytes, so an intermediary cannot alter it undetected.
+message RegisterRequest {
+  // Major versions of the a2a.controlplane schema package the Worker supports, for example [1].
+  repeated uint32 supported_versions = 1;
+
+  // Optional features the Worker supports (spec/04-control-api.md, section 5), for example
+  // "recovery.replay". "recovery.snapshot" is implied and need not be listed.
+  repeated string features = 2;
+
+  // Requested capability set. The CCR admits it against policy; the Worker's first state message
+  // MUST be a snapshot of exactly the admitted set.
+  map<string, string> capabilities = 3;
+}
+
+// Aggregator to CCR, step 1: open a registration for a Worker whose mTLS session it terminates.
+message BeginRegistrationRequest {
+  // SPIFFE ID the Aggregator verified on the Worker's mTLS handshake.
+  string worker_spiffe_id = 1;
+
+  // The Worker's serialized RegisterRequest, byte for byte.
+  bytes register_request = 2;
+
+  // The Worker's X.509-SVID chain (DER, leaf first). The CCR validates it against the trust
+  // bundle and checks that the URI SAN equals worker_spiffe_id.
+  repeated bytes svid_chain = 3;
+
+  // TLS exporter value for the Worker's connection (RFC 9266 "tls-exporter", label
+  // "EXPORTER-a2a-cp-register", empty context, 32 bytes). Empty only on transports without TLS.
+  bytes channel_binding = 4;
+
+  // The relaying Aggregator instance (see AttachRequest.instance_id).
+  string instance_id = 5;
+}
+
+// CCR to Aggregator to Worker.
+message RegistrationChallenge {
+  // At least 128 bits from a CSPRNG, single use, bound to the Worker's SPIFFE ID.
+  bytes nonce = 1;
+
+  // How long the nonce stays valid, in milliseconds, counted from when the CCR issued it.
+  uint32 timeout_ms = 2;
+
+  // Highest schema major version supported by both sides.
+  uint32 selected_version = 3;
+
+  // Intersection of the optional features both sides support.
+  repeated string selected_features = 4;
+}
+
+// Aggregator to CCR, step 2. The signature covers the payload defined in
+// spec/04-control-api.md, section 2.3.
+message CompleteRegistrationRequest {
+  string worker_spiffe_id = 1;
+  bytes signature = 2;
+  string instance_id = 3;
+}
+
+message RegistrationAdmission {
+  // Identifies this Worker session. Owned by exactly one Aggregator instance.
+  string session_id = 1;
+
+  uint32 selected_version = 2;
+  repeated string selected_features = 3;
+
+  // The capability set the CCR admitted.
+  map<string, string> admitted_capabilities = 4;
+}
+
+// Aggregator instance to CCR: join the cluster (spec/04-control-api.md, section 3).
+message AttachRequest {
+  // Unique per running instance. All instances of a zone share one SPIFFE ID, so this is the only
+  // way to tell them apart.
+  string instance_id = 1;
+
+  repeated uint32 supported_versions = 2;
+  repeated string features = 3;
+
+  // Where clients reach this instance's TaskIntake service, for example "agg-1.eu-west:50051". The
+  // CCR hands it to clients with a voucher.
+  string endpoint = 4;
+}
+
+message AttachResponse {
+  // Monotonically increasing per zone. Stamped on every ZoneStateReport the instance sends.
+  uint64 epoch = 1;
+
+  uint32 selected_version = 2;
+  repeated string selected_features = 3;
+}
+
+message DetachRequest {
+  string instance_id = 1;
+}
+
+message DetachResponse {}

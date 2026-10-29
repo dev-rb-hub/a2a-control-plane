@@ -16,7 +16,16 @@ message ControlMessage {
   oneof command {
     CancelTask cancel_task = 1;
     HeartbeatConfig heartbeat_config = 2;
+    ResyncRequest resync = 3;
   }
+}
+
+// Asks the Worker to send a snapshot (AgentStateDelta with snapshot set and the complete
+// capability set) as its next state message. Sent when the Aggregator detects a sequence gap
+// (spec/05-operations.md, section 2.2).
+message ResyncRequest {
+  // Highest Worker sequence number the Aggregator applied. Informational.
+  uint64 last_applied_sequence = 1;
 }
 
 // Asks the Worker to stop a task. The Worker answers with a TaskResult whose status is

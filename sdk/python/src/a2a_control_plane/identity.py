@@ -16,6 +16,7 @@ class Role(StrEnum):
     REGISTRY = "registry"
     AGGREGATOR = "aggregator"
     WORKER = "worker"
+    CLIENT = "client"
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,16 +27,25 @@ class SpiffeId:
         spiffe://<td>/registry
         spiffe://<td>/zone/<zone_id>/aggregator
         spiffe://<td>/zone/<zone_id>/agent/<agent_id>
+        spiffe://<td>/client/<client_id>
     """
 
     trust_domain: str
     role: Role
     zone_id: str | None = None
     agent_id: str | None = None
+    client_id: str | None = None
 
     def __post_init__(self) -> None:
         if not _TRUST_DOMAIN_RE.fullmatch(self.trust_domain):
             raise ValueError(f"invalid trust domain {self.trust_domain!r}")
+        if self.role is Role.CLIENT:
+            if self.client_id is None or self.zone_id is not None or self.agent_id is not None:
+                raise ValueError("client identity requires a client id and no zone or agent")
+            validate_token(self.client_id, "client_id")
+            return
+        if self.client_id is not None:
+            raise ValueError("only client identities have a client id")
         if self.role is Role.REGISTRY:
             if self.zone_id is not None or self.agent_id is not None:
                 raise ValueError("registry identity has no zone or agent")
@@ -62,6 +72,10 @@ class SpiffeId:
         return cls(trust_domain, Role.WORKER, zone_id, agent_id)
 
     @classmethod
+    def client(cls, trust_domain: str, client_id: str) -> SpiffeId:
+        return cls(trust_domain, Role.CLIENT, client_id=client_id)
+
+    @classmethod
     def parse(cls, uri: str) -> SpiffeId:
         if not uri.startswith(_SCHEME):
             raise ValueError(f"not a SPIFFE ID: {uri!r}")
@@ -76,12 +90,16 @@ class SpiffeId:
                 return cls.aggregator(trust_domain, zone_id)
             case ["zone", zone_id, "agent", agent_id]:
                 return cls.worker(trust_domain, zone_id, agent_id)
+            case ["client", client_id]:
+                return cls.client(trust_domain, client_id)
         raise ValueError(f"unrecognized SPIFFE ID path: {uri!r}")
 
     def __str__(self) -> str:
         base = f"{_SCHEME}{self.trust_domain}"
         if self.role is Role.REGISTRY:
             return f"{base}/registry"
+        if self.role is Role.CLIENT:
+            return f"{base}/client/{self.client_id}"
         if self.role is Role.AGGREGATOR:
             return f"{base}/zone/{self.zone_id}/aggregator"
         return f"{base}/zone/{self.zone_id}/agent/{self.agent_id}"

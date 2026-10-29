@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11state_delta.proto\x12\x13\x61\x32\x61.controlplane.v1\"\xfa\x01\n\x0f\x41gentStateDelta\x12\x10\n\x08\x61gent_id\x18\x01 \x01(\t\x12\x14\n\x0ctimestamp_ns\x18\x02 \x01(\x04\x12\x0f\n\x07zone_id\x18\x03 \x01(\t\x12[\n\x14\x63hanged_capabilities\x18\x04 \x03(\x0b\x32=.a2a.controlplane.v1.AgentStateDelta.ChangedCapabilitiesEntry\x12\x15\n\rtrace_context\x18\x05 \x01(\x0c\x1a:\n\x18\x43hangedCapabilitiesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x42y\n%io.github.devrbhub.a2acontrolplane.v1P\x01Z8github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1\xaa\x02\x13\x41\x32\x41.ControlPlane.V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11state_delta.proto\x12\x13\x61\x32\x61.controlplane.v1\"\x9e\x02\n\x0f\x41gentStateDelta\x12\x10\n\x08\x61gent_id\x18\x01 \x01(\t\x12\x14\n\x0ctimestamp_ns\x18\x02 \x01(\x04\x12\x0f\n\x07zone_id\x18\x03 \x01(\t\x12[\n\x14\x63hanged_capabilities\x18\x04 \x03(\x0b\x32=.a2a.controlplane.v1.AgentStateDelta.ChangedCapabilitiesEntry\x12\x15\n\rtrace_context\x18\x05 \x01(\x0c\x12\x10\n\x08sequence\x18\x06 \x01(\x04\x12\x10\n\x08snapshot\x18\x07 \x01(\x08\x1a:\n\x18\x43hangedCapabilitiesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x42y\n%io.github.devrbhub.a2acontrolplane.v1P\x01Z8github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1\xaa\x02\x13\x41\x32\x41.ControlPlane.V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -35,7 +35,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_AGENTSTATEDELTA_CHANGEDCAPABILITIESENTRY']._loaded_options = None
   _globals['_AGENTSTATEDELTA_CHANGEDCAPABILITIESENTRY']._serialized_options = b'8\001'
   _globals['_AGENTSTATEDELTA']._serialized_start=43
-  _globals['_AGENTSTATEDELTA']._serialized_end=293
-  _globals['_AGENTSTATEDELTA_CHANGEDCAPABILITIESENTRY']._serialized_start=235
-  _globals['_AGENTSTATEDELTA_CHANGEDCAPABILITIESENTRY']._serialized_end=293
+  _globals['_AGENTSTATEDELTA']._serialized_end=329
+  _globals['_AGENTSTATEDELTA_CHANGEDCAPABILITIESENTRY']._serialized_start=271
+  _globals['_AGENTSTATEDELTA_CHANGEDCAPABILITIESENTRY']._serialized_end=329
 # @@protoc_insertion_point(module_scope)
