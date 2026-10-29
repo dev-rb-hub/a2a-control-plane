@@ -32,6 +32,7 @@ class BusStats:
     delivered: int = 0
     bytes_published: int = 0
     denied: int = 0
+    dropped: int = 0  # messages discarded by ``drop_filter``
 
 
 class Session:
@@ -53,9 +54,13 @@ class Session:
 
 
 class InMemoryBus:
-    def __init__(self) -> None:
+    def __init__(self, max_message_bytes: int = MAX_MESSAGE_BYTES) -> None:
+        self.max_message_bytes = max_message_bytes
         self._subscriptions: list[tuple[Session, str, Handler]] = []
         self.stats = BusStats()
+        # Simulation hook: return True to lose a message after it was authorized and counted, like
+        # a transport with at-most-once delivery. Used to exercise recovery (spec 05, section 2).
+        self.drop_filter: Callable[[Message], bool] | None = None
 
     def connect(self, identity: SpiffeId) -> Session:
         return Session(self, identity)
@@ -77,14 +82,17 @@ class InMemoryBus:
     ) -> None:
         if session.closed:
             raise ConnectionError("session closed")
-        if len(payload) > MAX_MESSAGE_BYTES:
-            raise ValueError(f"payload exceeds {MAX_MESSAGE_BYTES} bytes")
+        if len(payload) > self.max_message_bytes:
+            raise ValueError(f"payload exceeds {self.max_message_bytes} bytes")
         if not may_publish(session.identity, subject):
             self.stats.denied += 1
             raise PermissionError(f"{session.identity} may not publish to {subject!r}")
         self.stats.published += 1
         self.stats.bytes_published += len(payload)
         message = Message(subject, payload, dict(headers or {}))
+        if self.drop_filter is not None and self.drop_filter(message):
+            self.stats.dropped += 1
+            return
         for _, pattern, handler in list(self._subscriptions):
             if subject_matches(pattern, subject):
                 self.stats.delivered += 1

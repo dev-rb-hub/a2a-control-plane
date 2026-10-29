@@ -2,18 +2,29 @@
 
 from __future__ import annotations
 
-from a2a_control_plane._proto.control_pb2 import CancelTask, ControlMessage, HeartbeatConfig
+from a2a_control_plane._proto.control_pb2 import (
+    CancelTask,
+    ControlMessage,
+    HeartbeatConfig,
+    ResyncRequest,
+)
 
 __all__ = [
     "CONTROL_TYPE",
     "CancelTask",
     "ControlMessage",
     "HeartbeatConfig",
+    "ResyncRequest",
     "cancel_message",
     "heartbeat_config_message",
+    "resync_message",
 ]
 
 CONTROL_TYPE = "a2a.controlplane.v1.ControlMessage"
+
+
+def resync_message(last_applied_sequence: int = 0) -> ControlMessage:
+    return ControlMessage(resync=ResyncRequest(last_applied_sequence=last_applied_sequence))
 
 
 def cancel_message(task_id: str, reason: str = "") -> ControlMessage:

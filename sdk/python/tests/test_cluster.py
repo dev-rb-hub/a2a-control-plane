@@ -9,7 +9,9 @@ from a2a_control_plane import (
     WorkerClient,
     WorkerState,
 )
+from a2a_control_plane._proto.registration_pb2 import RegisterRequest
 from a2a_control_plane.delta import make_delta
+from a2a_control_plane.registry import challenge_payload
 from a2a_control_plane.subjects import agent_subject
 from a2a_control_plane.tasks import (
     TASK_STATUS_FAILED,
@@ -67,12 +69,18 @@ def test_worker_from_another_zone_is_rejected() -> None:
     assert agg_state(c, "w1") is None
 
 
+def request_bytes(capabilities: dict[str, str] | None = None) -> bytes:
+    return RegisterRequest(
+        supported_versions=[1], capabilities=capabilities or {"model": "default"}
+    ).SerializeToString()
+
+
 def test_bad_signature_is_rejected() -> None:
     c = DevCluster()
     agg = c.aggregators["z1"]
     worker = SpiffeId.worker(TD, "z1", "w1")
     c.ca.issue(worker)
-    agg.begin_registration(worker)
+    agg.begin_registration(worker, request_bytes())
     with pytest.raises(PermissionError):
         agg.complete_registration(worker, b"\x00" * 64)
     assert agg_state(c, "w1") is None
@@ -83,21 +91,21 @@ def test_unknown_identity_cannot_register() -> None:
     rogue = SpiffeId.worker(TD, "z1", "rogue")
     other = c.ca.issue(SpiffeId.worker(TD, "z1", "w1"))  # signs with someone else's key
     agg = c.aggregators["z1"]
-    nonce = agg.begin_registration(rogue)
-    from a2a_control_plane.registry import challenge_payload
-
+    request = request_bytes()
+    challenge = agg.begin_registration(rogue, request)
     with pytest.raises(PermissionError):
-        agg.complete_registration(rogue, other.sign(challenge_payload(nonce, rogue)))
+        agg.complete_registration(
+            rogue, other.sign(challenge_payload(challenge.nonce, rogue, request))
+        )
 
 
 def test_nonce_is_single_use() -> None:
     c = DevCluster()
     cred = c.ca.issue(SpiffeId.worker(TD, "z1", "w1"))
     agg = c.aggregators["z1"]
-    from a2a_control_plane.registry import challenge_payload
-
-    nonce = agg.begin_registration(cred.identity)
-    sig = cred.sign(challenge_payload(nonce, cred.identity))
+    request = request_bytes()
+    challenge = agg.begin_registration(cred.identity, request)
+    sig = cred.sign(challenge_payload(challenge.nonce, cred.identity, request))
     agg.complete_registration(cred.identity, sig)
     with pytest.raises(PermissionError):  # replay: no pending challenge any more
         agg.complete_registration(cred.identity, sig)
@@ -107,18 +115,19 @@ def test_challenge_expires() -> None:
     c = DevCluster()
     cred = c.ca.issue(SpiffeId.worker(TD, "z1", "w1"))
     agg = c.aggregators["z1"]
-    from a2a_control_plane.registry import challenge_payload
-
-    nonce = agg.begin_registration(cred.identity)
+    request = request_bytes()
+    challenge = agg.begin_registration(cred.identity, request)
     c.clock.advance(11)  # default timeout is 10s
     with pytest.raises(PermissionError):
-        agg.complete_registration(cred.identity, cred.sign(challenge_payload(nonce, cred.identity)))
+        agg.complete_registration(
+            cred.identity, cred.sign(challenge_payload(challenge.nonce, cred.identity, request))
+        )
 
 
 def test_abandoned_challenge_is_cleaned_up() -> None:
     c = DevCluster()
     cred = c.ca.issue(SpiffeId.worker(TD, "z1", "w1"))
-    c.aggregators["z1"].begin_registration(cred.identity)
+    c.aggregators["z1"].begin_registration(cred.identity, request_bytes())
     assert agg_state(c, "w1") is WorkerState.CHALLENGED
     c.advance(11)
     assert agg_state(c, "w1") is None

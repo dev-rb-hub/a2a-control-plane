@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package a2a.controlplane.v1;
+
+import "task.proto";
+
+option go_package = "github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1";
+option java_multiple_files = true;
+option java_package = "io.github.devrbhub.a2acontrolplane.v1";
+option csharp_namespace = "A2A.ControlPlane.V1";
+
+// Task origination and the CCR-to-Aggregator control hop (spec/04-control-api.md, sections 4, 6).
+
+// A client submits a task to the CCR; the CCR forwards the same message to a zone Aggregator.
+message SubmitTaskRequest {
+  // Target zone. Empty lets the CCR choose any zone that has an eligible Worker.
+  string zone_id = 1;
+
+  // The task_id is chosen by the submitting client and MUST be unique among in-flight tasks in
+  // the cluster. attempt MUST be 1 or unset; the Aggregator owns it afterwards.
+  Task task = 2;
+}
+
+message CancelTaskRequest {
+  string task_id = 1;
+
+  // Human-readable detail. MUST NOT contain secrets.
+  string reason = 2;
+}
+
+message CancelTaskResponse {
+  // True if the task was in flight and a cancellation was requested.
+  bool accepted = 1;
+}
+
+// CCR to Aggregator: produce a full snapshot report (spec/05-operations.md, section 2.3).
+message ZoneSnapshotRequest {
+  string zone_id = 1;
+}

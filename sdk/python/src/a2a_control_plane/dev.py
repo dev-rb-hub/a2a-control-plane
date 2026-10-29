@@ -14,10 +14,10 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 )
 
 from a2a_control_plane.aggregator import Aggregator
-from a2a_control_plane.bus import InMemoryBus
+from a2a_control_plane.bus import MAX_MESSAGE_BYTES, InMemoryBus
 from a2a_control_plane.heartbeat import AdaptiveHeartbeat
 from a2a_control_plane.identity import SpiffeId
-from a2a_control_plane.registry import Registry
+from a2a_control_plane.registry import CapabilityAdmission, Registry
 from a2a_control_plane.worker import WorkerClient
 
 
@@ -70,15 +70,27 @@ class DevCluster:
         trust_domain: str = "example.org",
         *,
         grace_period: float = 120.0,
+        registration_timeout: float = 30.0,
         coalesce_window: float = 1.0,
         max_attempts: int = 3,
+        max_in_flight: int = 16,
+        max_message_bytes: int = MAX_MESSAGE_BYTES,
+        capability_policy: CapabilityAdmission | None = None,
     ) -> None:
         self.trust_domain = trust_domain
         self.clock = ManualClock()
         self.ca = DevCA()
-        self.bus = InMemoryBus()
+        self.max_message_bytes = max_message_bytes
+        # The bus is a transport ceiling; receivers enforce the configured, possibly lower, limit.
+        self.bus = InMemoryBus(max(max_message_bytes, MAX_MESSAGE_BYTES))
         self.registry = Registry(
-            SpiffeId.registry(trust_domain), self.ca.public_key_for, self.clock, bus=self.bus
+            SpiffeId.registry(trust_domain),
+            self.ca.public_key_for,
+            self.clock,
+            bus=self.bus,
+            allowed_zones=zones,
+            capability_policy=capability_policy,
+            max_message_bytes=max_message_bytes,
         )
         self.aggregators = {
             zone: Aggregator(
@@ -88,8 +100,11 @@ class DevCluster:
                 self.clock,
                 heartbeat_factory=AdaptiveHeartbeat,
                 grace_period=grace_period,
+                registration_timeout=registration_timeout,
                 coalesce_window=coalesce_window,
                 max_attempts=max_attempts,
+                max_in_flight=max_in_flight,
+                max_message_bytes=max_message_bytes,
             )
             for zone in zones
         }
@@ -106,7 +121,12 @@ class DevCluster:
     ) -> WorkerClient:
         zone = zone or self._default_zone
         credential = self.ca.issue(SpiffeId.worker(self.trust_domain, zone, agent_id))
-        worker = WorkerClient(credential, self.aggregators[zone], self.clock)
+        worker = WorkerClient(
+            credential,
+            self.aggregators[zone],
+            self.clock,
+            max_message_bytes=self.max_message_bytes,
+        )
         if register:
             worker.register(capabilities or {"model": "default"})
             self.workers.append(worker)

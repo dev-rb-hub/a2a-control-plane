@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from a2a_control_plane._proto import state_delta_pb2 as state__delta__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11zone_report.proto\x12\x13\x61\x32\x61.controlplane.v1\x1a\x11state_delta.proto\"\xad\x01\n\x0fZoneStateReport\x12\x0f\n\x07zone_id\x18\x01 \x01(\t\x12\x14\n\x0ctimestamp_ns\x18\x02 \x01(\x04\x12\x34\n\x06\x64\x65ltas\x18\x03 \x03(\x0b\x32$.a2a.controlplane.v1.AgentStateDelta\x12=\n\rstate_changes\x18\x04 \x03(\x0b\x32&.a2a.controlplane.v1.WorkerStateChange\"l\n\x11WorkerStateChange\x12\x10\n\x08\x61gent_id\x18\x01 \x01(\t\x12/\n\x05state\x18\x02 \x01(\x0e\x32 .a2a.controlplane.v1.WorkerState\x12\x14\n\x0ctimestamp_ns\x18\x03 \x01(\x04*\xd2\x01\n\x0bWorkerState\x12\x1c\n\x18WORKER_STATE_UNSPECIFIED\x10\x00\x12\x1d\n\x19WORKER_STATE_UNREGISTERED\x10\x01\x12\x1b\n\x17WORKER_STATE_CHALLENGED\x10\x02\x12\x1b\n\x17WORKER_STATE_REGISTERED\x10\x03\x12\x15\n\x11WORKER_STATE_IDLE\x10\x04\x12\x1a\n\x16WORKER_STATE_EXECUTING\x10\x05\x12\x19\n\x15WORKER_STATE_DEGRADED\x10\x06\x42y\n%io.github.devrbhub.a2acontrolplane.v1P\x01Z8github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1\xaa\x02\x13\x41\x32\x41.ControlPlane.V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11zone_report.proto\x12\x13\x61\x32\x61.controlplane.v1\x1a\x11state_delta.proto\"\xf5\x01\n\x0fZoneStateReport\x12\x0f\n\x07zone_id\x18\x01 \x01(\t\x12\x14\n\x0ctimestamp_ns\x18\x02 \x01(\x04\x12\x34\n\x06\x64\x65ltas\x18\x03 \x03(\x0b\x32$.a2a.controlplane.v1.AgentStateDelta\x12=\n\rstate_changes\x18\x04 \x03(\x0b\x32&.a2a.controlplane.v1.WorkerStateChange\x12\x13\n\x0binstance_id\x18\x05 \x01(\t\x12\r\n\x05\x65poch\x18\x06 \x01(\x04\x12\x10\n\x08sequence\x18\x07 \x01(\x04\x12\x10\n\x08snapshot\x18\x08 \x01(\x08\"l\n\x11WorkerStateChange\x12\x10\n\x08\x61gent_id\x18\x01 \x01(\t\x12/\n\x05state\x18\x02 \x01(\x0e\x32 .a2a.controlplane.v1.WorkerState\x12\x14\n\x0ctimestamp_ns\x18\x03 \x01(\x04*\xd2\x01\n\x0bWorkerState\x12\x1c\n\x18WORKER_STATE_UNSPECIFIED\x10\x00\x12\x1d\n\x19WORKER_STATE_UNREGISTERED\x10\x01\x12\x1b\n\x17WORKER_STATE_CHALLENGED\x10\x02\x12\x1b\n\x17WORKER_STATE_REGISTERED\x10\x03\x12\x15\n\x11WORKER_STATE_IDLE\x10\x04\x12\x1a\n\x16WORKER_STATE_EXECUTING\x10\x05\x12\x19\n\x15WORKER_STATE_DEGRADED\x10\x06\x42y\n%io.github.devrbhub.a2acontrolplane.v1P\x01Z8github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1\xaa\x02\x13\x41\x32\x41.ControlPlane.V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,10 +33,10 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'zone_report_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n%io.github.devrbhub.a2acontrolplane.v1P\001Z8github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1\252\002\023A2A.ControlPlane.V1'
-  _globals['_WORKERSTATE']._serialized_start=348
-  _globals['_WORKERSTATE']._serialized_end=558
+  _globals['_WORKERSTATE']._serialized_start=420
+  _globals['_WORKERSTATE']._serialized_end=630
   _globals['_ZONESTATEREPORT']._serialized_start=62
-  _globals['_ZONESTATEREPORT']._serialized_end=235
-  _globals['_WORKERSTATECHANGE']._serialized_start=237
-  _globals['_WORKERSTATECHANGE']._serialized_end=345
+  _globals['_ZONESTATEREPORT']._serialized_end=307
+  _globals['_WORKERSTATECHANGE']._serialized_start=309
+  _globals['_WORKERSTATECHANGE']._serialized_end=417
 # @@protoc_insertion_point(module_scope)

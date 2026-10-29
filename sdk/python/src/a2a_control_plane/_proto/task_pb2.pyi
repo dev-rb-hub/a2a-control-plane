@@ -1,3 +1,4 @@
+from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -20,7 +21,14 @@ TASK_STATUS_REJECTED: TaskStatus
 TASK_STATUS_CANCELLED: TaskStatus
 
 class Task(_message.Message):
-    __slots__ = ("task_id", "kind", "payload", "content_type", "deadline_ns", "attempt", "trace_context")
+    __slots__ = ("task_id", "kind", "payload", "content_type", "deadline_ns", "attempt", "trace_context", "required_capabilities")
+    class RequiredCapabilitiesEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: str
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
     TASK_ID_FIELD_NUMBER: _ClassVar[int]
     KIND_FIELD_NUMBER: _ClassVar[int]
     PAYLOAD_FIELD_NUMBER: _ClassVar[int]
@@ -28,6 +36,7 @@ class Task(_message.Message):
     DEADLINE_NS_FIELD_NUMBER: _ClassVar[int]
     ATTEMPT_FIELD_NUMBER: _ClassVar[int]
     TRACE_CONTEXT_FIELD_NUMBER: _ClassVar[int]
+    REQUIRED_CAPABILITIES_FIELD_NUMBER: _ClassVar[int]
     task_id: str
     kind: str
     payload: bytes
@@ -35,10 +44,11 @@ class Task(_message.Message):
     deadline_ns: int
     attempt: int
     trace_context: bytes
-    def __init__(self, task_id: _Optional[str] = ..., kind: _Optional[str] = ..., payload: _Optional[bytes] = ..., content_type: _Optional[str] = ..., deadline_ns: _Optional[int] = ..., attempt: _Optional[int] = ..., trace_context: _Optional[bytes] = ...) -> None: ...
+    required_capabilities: _containers.ScalarMap[str, str]
+    def __init__(self, task_id: _Optional[str] = ..., kind: _Optional[str] = ..., payload: _Optional[bytes] = ..., content_type: _Optional[str] = ..., deadline_ns: _Optional[int] = ..., attempt: _Optional[int] = ..., trace_context: _Optional[bytes] = ..., required_capabilities: _Optional[_Mapping[str, str]] = ...) -> None: ...
 
 class TaskResult(_message.Message):
-    __slots__ = ("task_id", "status", "payload", "content_type", "error", "completed_at_ns", "trace_context")
+    __slots__ = ("task_id", "status", "payload", "content_type", "error", "completed_at_ns", "trace_context", "attempt")
     TASK_ID_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]
     PAYLOAD_FIELD_NUMBER: _ClassVar[int]
@@ -46,6 +56,7 @@ class TaskResult(_message.Message):
     ERROR_FIELD_NUMBER: _ClassVar[int]
     COMPLETED_AT_NS_FIELD_NUMBER: _ClassVar[int]
     TRACE_CONTEXT_FIELD_NUMBER: _ClassVar[int]
+    ATTEMPT_FIELD_NUMBER: _ClassVar[int]
     task_id: str
     status: TaskStatus
     payload: bytes
@@ -53,7 +64,8 @@ class TaskResult(_message.Message):
     error: TaskError
     completed_at_ns: int
     trace_context: bytes
-    def __init__(self, task_id: _Optional[str] = ..., status: _Optional[_Union[TaskStatus, str]] = ..., payload: _Optional[bytes] = ..., content_type: _Optional[str] = ..., error: _Optional[_Union[TaskError, _Mapping]] = ..., completed_at_ns: _Optional[int] = ..., trace_context: _Optional[bytes] = ...) -> None: ...
+    attempt: int
+    def __init__(self, task_id: _Optional[str] = ..., status: _Optional[_Union[TaskStatus, str]] = ..., payload: _Optional[bytes] = ..., content_type: _Optional[str] = ..., error: _Optional[_Union[TaskError, _Mapping]] = ..., completed_at_ns: _Optional[int] = ..., trace_context: _Optional[bytes] = ..., attempt: _Optional[int] = ...) -> None: ...
 
 class TaskError(_message.Message):
     __slots__ = ("code", "message", "retryable")

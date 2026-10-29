@@ -26,16 +26,24 @@ WORKER_STATE_EXECUTING: WorkerState
 WORKER_STATE_DEGRADED: WorkerState
 
 class ZoneStateReport(_message.Message):
-    __slots__ = ("zone_id", "timestamp_ns", "deltas", "state_changes")
+    __slots__ = ("zone_id", "timestamp_ns", "deltas", "state_changes", "instance_id", "epoch", "sequence", "snapshot")
     ZONE_ID_FIELD_NUMBER: _ClassVar[int]
     TIMESTAMP_NS_FIELD_NUMBER: _ClassVar[int]
     DELTAS_FIELD_NUMBER: _ClassVar[int]
     STATE_CHANGES_FIELD_NUMBER: _ClassVar[int]
+    INSTANCE_ID_FIELD_NUMBER: _ClassVar[int]
+    EPOCH_FIELD_NUMBER: _ClassVar[int]
+    SEQUENCE_FIELD_NUMBER: _ClassVar[int]
+    SNAPSHOT_FIELD_NUMBER: _ClassVar[int]
     zone_id: str
     timestamp_ns: int
     deltas: _containers.RepeatedCompositeFieldContainer[_state_delta_pb2.AgentStateDelta]
     state_changes: _containers.RepeatedCompositeFieldContainer[WorkerStateChange]
-    def __init__(self, zone_id: _Optional[str] = ..., timestamp_ns: _Optional[int] = ..., deltas: _Optional[_Iterable[_Union[_state_delta_pb2.AgentStateDelta, _Mapping]]] = ..., state_changes: _Optional[_Iterable[_Union[WorkerStateChange, _Mapping]]] = ...) -> None: ...
+    instance_id: str
+    epoch: int
+    sequence: int
+    snapshot: bool
+    def __init__(self, zone_id: _Optional[str] = ..., timestamp_ns: _Optional[int] = ..., deltas: _Optional[_Iterable[_Union[_state_delta_pb2.AgentStateDelta, _Mapping]]] = ..., state_changes: _Optional[_Iterable[_Union[WorkerStateChange, _Mapping]]] = ..., instance_id: _Optional[str] = ..., epoch: _Optional[int] = ..., sequence: _Optional[int] = ..., snapshot: bool = ...) -> None: ...
 
 class WorkerStateChange(_message.Message):
     __slots__ = ("agent_id", "state", "timestamp_ns")

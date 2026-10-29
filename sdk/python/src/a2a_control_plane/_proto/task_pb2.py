@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ntask.proto\x12\x13\x61\x32\x61.controlplane.v1\"\x89\x01\n\x04Task\x12\x0f\n\x07task_id\x18\x01 \x01(\t\x12\x0c\n\x04kind\x18\x02 \x01(\t\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\x12\x14\n\x0c\x63ontent_type\x18\x04 \x01(\t\x12\x13\n\x0b\x64\x65\x61\x64line_ns\x18\x05 \x01(\x04\x12\x0f\n\x07\x61ttempt\x18\x06 \x01(\r\x12\x15\n\rtrace_context\x18\x07 \x01(\x0c\"\xd4\x01\n\nTaskResult\x12\x0f\n\x07task_id\x18\x01 \x01(\t\x12/\n\x06status\x18\x02 \x01(\x0e\x32\x1f.a2a.controlplane.v1.TaskStatus\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\x12\x14\n\x0c\x63ontent_type\x18\x04 \x01(\t\x12-\n\x05\x65rror\x18\x05 \x01(\x0b\x32\x1e.a2a.controlplane.v1.TaskError\x12\x17\n\x0f\x63ompleted_at_ns\x18\x06 \x01(\x04\x12\x15\n\rtrace_context\x18\x07 \x01(\x0c\"=\n\tTaskError\x12\x0c\n\x04\x63ode\x18\x01 \x01(\t\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x11\n\tretryable\x18\x03 \x01(\x08*\x91\x01\n\nTaskStatus\x12\x1b\n\x17TASK_STATUS_UNSPECIFIED\x10\x00\x12\x19\n\x15TASK_STATUS_SUCCEEDED\x10\x01\x12\x16\n\x12TASK_STATUS_FAILED\x10\x02\x12\x18\n\x14TASK_STATUS_REJECTED\x10\x03\x12\x19\n\x15TASK_STATUS_CANCELLED\x10\x04\x42y\n%io.github.devrbhub.a2acontrolplane.v1P\x01Z8github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1\xaa\x02\x13\x41\x32\x41.ControlPlane.V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ntask.proto\x12\x13\x61\x32\x61.controlplane.v1\"\x9a\x02\n\x04Task\x12\x0f\n\x07task_id\x18\x01 \x01(\t\x12\x0c\n\x04kind\x18\x02 \x01(\t\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\x12\x14\n\x0c\x63ontent_type\x18\x04 \x01(\t\x12\x13\n\x0b\x64\x65\x61\x64line_ns\x18\x05 \x01(\x04\x12\x0f\n\x07\x61ttempt\x18\x06 \x01(\r\x12\x15\n\rtrace_context\x18\x07 \x01(\x0c\x12R\n\x15required_capabilities\x18\x08 \x03(\x0b\x32\x33.a2a.controlplane.v1.Task.RequiredCapabilitiesEntry\x1a;\n\x19RequiredCapabilitiesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\xe5\x01\n\nTaskResult\x12\x0f\n\x07task_id\x18\x01 \x01(\t\x12/\n\x06status\x18\x02 \x01(\x0e\x32\x1f.a2a.controlplane.v1.TaskStatus\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\x12\x14\n\x0c\x63ontent_type\x18\x04 \x01(\t\x12-\n\x05\x65rror\x18\x05 \x01(\x0b\x32\x1e.a2a.controlplane.v1.TaskError\x12\x17\n\x0f\x63ompleted_at_ns\x18\x06 \x01(\x04\x12\x15\n\rtrace_context\x18\x07 \x01(\x0c\x12\x0f\n\x07\x61ttempt\x18\x08 \x01(\r\"=\n\tTaskError\x12\x0c\n\x04\x63ode\x18\x01 \x01(\t\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x11\n\tretryable\x18\x03 \x01(\x08*\x91\x01\n\nTaskStatus\x12\x1b\n\x17TASK_STATUS_UNSPECIFIED\x10\x00\x12\x19\n\x15TASK_STATUS_SUCCEEDED\x10\x01\x12\x16\n\x12TASK_STATUS_FAILED\x10\x02\x12\x18\n\x14TASK_STATUS_REJECTED\x10\x03\x12\x19\n\x15TASK_STATUS_CANCELLED\x10\x04\x42y\n%io.github.devrbhub.a2acontrolplane.v1P\x01Z8github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1\xaa\x02\x13\x41\x32\x41.ControlPlane.V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,12 +32,16 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'task_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n%io.github.devrbhub.a2acontrolplane.v1P\001Z8github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1\252\002\023A2A.ControlPlane.V1'
-  _globals['_TASKSTATUS']._serialized_start=454
-  _globals['_TASKSTATUS']._serialized_end=599
+  _globals['_TASK_REQUIREDCAPABILITIESENTRY']._loaded_options = None
+  _globals['_TASK_REQUIREDCAPABILITIESENTRY']._serialized_options = b'8\001'
+  _globals['_TASKSTATUS']._serialized_start=616
+  _globals['_TASKSTATUS']._serialized_end=761
   _globals['_TASK']._serialized_start=36
-  _globals['_TASK']._serialized_end=173
-  _globals['_TASKRESULT']._serialized_start=176
-  _globals['_TASKRESULT']._serialized_end=388
-  _globals['_TASKERROR']._serialized_start=390
-  _globals['_TASKERROR']._serialized_end=451
+  _globals['_TASK']._serialized_end=318
+  _globals['_TASK_REQUIREDCAPABILITIESENTRY']._serialized_start=259
+  _globals['_TASK_REQUIREDCAPABILITIESENTRY']._serialized_end=318
+  _globals['_TASKRESULT']._serialized_start=321
+  _globals['_TASKRESULT']._serialized_end=550
+  _globals['_TASKERROR']._serialized_start=552
+  _globals['_TASKERROR']._serialized_end=613
 # @@protoc_insertion_point(module_scope)

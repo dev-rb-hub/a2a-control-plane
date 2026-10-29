@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package a2a.controlplane.v1;
+
+import "admin.proto";
+import "registration.proto";
+import "submission.proto";
+import "task.proto";
+import "zone_report.proto";
+
+option go_package = "github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1";
+option java_multiple_files = true;
+option java_package = "io.github.devrbhub.a2acontrolplane.v1";
+option csharp_namespace = "A2A.ControlPlane.V1";
+
+// gRPC services on port 50051 (spec/03-protocols.md, section 2). Error semantics are in
+// spec/04-control-api.md, section 7.
+
+// Served by the CCR to Aggregators.
+service Registration {
+  rpc Attach(AttachRequest) returns (AttachResponse);
+  rpc Detach(DetachRequest) returns (DetachResponse);
+  rpc BeginRegistration(BeginRegistrationRequest) returns (RegistrationChallenge);
+  rpc CompleteRegistration(CompleteRegistrationRequest) returns (RegistrationAdmission);
+}
+
+// Served by the CCR to authorized administrative clients.
+service Admin {
+  rpc RevokeIdentity(RevokeRequest) returns (RevokeResponse);
+  rpc ListWorkers(ListWorkersRequest) returns (ListWorkersResponse);
+}
+
+// Served by the CCR to authorized clients that originate tasks.
+service TaskSubmission {
+  // Completes when the task reaches its final outcome (spec/03-protocols.md, section 7.3).
+  rpc SubmitTask(SubmitTaskRequest) returns (TaskResult);
+  rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse);
+}
+
+// Served by each Aggregator instance to the CCR.
+service ZoneControl {
+  rpc Dispatch(SubmitTaskRequest) returns (TaskResult);
+  rpc Cancel(CancelTaskRequest) returns (CancelTaskResponse);
+  rpc RequestZoneSnapshot(ZoneSnapshotRequest) returns (ZoneStateReport);
+  rpc RevokeWorker(RevokeRequest) returns (RevokeResponse);
+}

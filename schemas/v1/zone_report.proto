@@ -23,6 +23,24 @@ message ZoneStateReport {
 
   // Worker lifecycle changes in the order they occurred.
   repeated WorkerStateChange state_changes = 4;
+
+  // Aggregator instance that produced the report. Every instance of a zone shares one SPIFFE ID,
+  // so the instance is identified by the id it gave the CCR when it attached
+  // (spec/04-control-api.md, section 3).
+  string instance_id = 5;
+
+  // Attachment epoch granted by the CCR when the instance attached. Reports with a lower epoch
+  // than the current one for the instance are stale and MUST be ignored.
+  uint64 epoch = 6;
+
+  // Per (instance_id, epoch) report number, starting at 1 and increasing by exactly 1. A gap tells
+  // the CCR that a report was lost (spec/05-operations.md, section 2.3).
+  uint64 sequence = 7;
+
+  // When true, the report is a full snapshot of the instance's zone view: one delta (with
+  // snapshot set) and one state change for EVERY Worker the instance currently serves. The CCR
+  // MUST replace its records for that instance's Workers with the snapshot.
+  bool snapshot = 8;
 }
 
 message WorkerStateChange {

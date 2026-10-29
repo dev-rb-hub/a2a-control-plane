@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Mapping
 
 from a2a_control_plane._proto.task_pb2 import (
     TASK_STATUS_CANCELLED,
@@ -45,6 +46,7 @@ def make_task(
     deadline_ns: int = 0,
     attempt: int = 1,
     trace_context: bytes = b"",
+    required_capabilities: Mapping[str, str] | None = None,
 ) -> Task:
     validate_token(task_id, "task_id")
     return Task(
@@ -55,6 +57,7 @@ def make_task(
         deadline_ns=deadline_ns,
         attempt=attempt,
         trace_context=trace_context,
+        required_capabilities=required_capabilities or {},
     )
 
 
@@ -65,6 +68,7 @@ def succeeded(task: Task, payload: bytes = b"", *, content_type: str = "") -> Ta
         payload=payload,
         content_type=content_type,
         completed_at_ns=time.time_ns(),
+        attempt=task.attempt,
     )
 
 
@@ -74,6 +78,7 @@ def _error_result(task: Task, status: int, code: str, message: str, retryable: b
         status=status,  # type: ignore[arg-type]
         error=TaskError(code=code, message=message, retryable=retryable),
         completed_at_ns=time.time_ns(),
+        attempt=task.attempt,
     )
 
 

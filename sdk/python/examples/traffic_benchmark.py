@@ -9,7 +9,7 @@ Run from sdk/python:  python examples/traffic_benchmark.py
 
 from __future__ import annotations
 
-from a2a_control_plane.delta import make_delta, make_heartbeat
+from a2a_control_plane.delta import make_delta, make_heartbeat, make_snapshot
 from a2a_control_plane.heartbeat import AdaptiveHeartbeat
 
 DURATION = 3600.0  # seconds
@@ -17,9 +17,22 @@ POLL_INTERVAL = 5.0
 CHANGE_EVERY = 600.0  # one capability change per agent per 10 minutes
 CAPABILITIES = {f"capability-{i}": f"value-{i}" for i in range(8)}
 
-FULL = len(make_delta("agent-0001", "zone-1", CAPABILITIES, timestamp_ns=1).SerializeToString())
-CHANGE = len(make_delta("agent-0001", "zone-1", {"slots": "3"}, timestamp_ns=1).SerializeToString())
-HEARTBEAT = len(make_heartbeat("agent-0001", "zone-1", timestamp_ns=1).SerializeToString())
+# Every message carries a per-session sequence number (spec 05, section 2). 1000 is a mid-session
+# value, encoded in two bytes, so the sizes below are not flattered by a one-byte number.
+SEQUENCE = 1000
+FULL = len(
+    make_snapshot(
+        "agent-0001", "zone-1", CAPABILITIES, timestamp_ns=1, sequence=SEQUENCE
+    ).SerializeToString()
+)
+CHANGE = len(
+    make_delta(
+        "agent-0001", "zone-1", {"slots": "3"}, timestamp_ns=1, sequence=SEQUENCE
+    ).SerializeToString()
+)
+HEARTBEAT = len(
+    make_heartbeat("agent-0001", "zone-1", timestamp_ns=1, sequence=SEQUENCE).SerializeToString()
+)
 
 
 def mesh(n: int) -> tuple[int, int]:
