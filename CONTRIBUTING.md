@@ -37,7 +37,7 @@ pytest -q && ruff check . && ruff format --check . && mypy src examples
 By submitting a contribution (a pull request, patch, or issue text you ask to have included) you agree that:
 
 1. **Origin (Developer Certificate of Origin 1.1).** You wrote it, or have the right to submit it under these terms. Sign off each commit with `git commit -s`, which adds a `Signed-off-by:` line. The full text is at <https://developercertificate.org/>.
-2. **Outbound licence.** Your contribution is released under the repository [LICENSE](LICENSE).
+2. **Outbound licence.** Your contribution is released under the licence that covers the files you change: [Apache-2.0](LICENSE-APACHE) for everything outside `spec/`, and [CC BY 4.0](LICENSE-CC-BY) for `spec/`. See [LICENSE](LICENSE).
 3. **Patents.** You grant a licence under any patents you own that your contribution necessarily infringes, for use of the contribution as part of this project.
 4. **Marks.** Contributing does not give you rights in the names in [TRADEMARKS.md](TRADEMARKS.md).
 

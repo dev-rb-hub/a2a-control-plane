@@ -2,8 +2,17 @@ a2a-control-plane
 
 The a2a-control-plane specification, schemas, reference material and Python
 SDK were created and first released (version 1) by Rendu Barkhuizen, the
-original author and maintainer. The copyright notice and licence terms are in
-LICENSE (MIT).
+original author and maintainer.
 
-"a2a-control-plane" and "A2A Control Plane" are claimed as trademarks. The MIT
-License does not grant trademark rights. See TRADEMARKS.md.
+Licensing:
+
+- spec/ (the specification text) is licensed under Creative Commons
+  Attribution 4.0 International (CC-BY-4.0). See LICENSE-CC-BY.
+- sdk/, schemas/, reference/ and all other files outside spec/ are licensed
+  under the Apache License, Version 2.0 (Apache-2.0). See LICENSE-APACHE.
+  Redistributions must keep this NOTICE file, as Apache-2.0 section 4(d)
+  requires.
+- LICENSE explains how the two parts divide.
+
+"a2a-control-plane" and "A2A Control Plane" are claimed as trademarks. Neither
+licence grants trademark rights. See TRADEMARKS.md.

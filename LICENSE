@@ -1,21 +1,32 @@
-MIT License
+a2a-control-plane
 
 Copyright (c) 2026 Rendu Barkhuizen
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This repository is licensed in two parts. Which licence applies depends on the
+directory.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. Source code, schemas and reference material: Apache License, Version 2.0
+   (SPDX: Apache-2.0). Full text in LICENSE-APACHE.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+     sdk/        Python SDK, examples, tests and scripts
+     schemas/    Protocol Buffers wire schemas
+     reference/  deployment examples
+     .github/    repository tooling
+
+   Unless a file says otherwise, every file outside spec/ (including the
+   top-level project documents such as README.md and CONTRIBUTING.md) is
+   licensed under Apache-2.0.
+
+2. Specification text: Creative Commons Attribution 4.0 International
+   (SPDX: CC-BY-4.0). Full text in LICENSE-CC-BY.
+
+     spec/       the normative specification (01-05) and the informative
+                 threat model (06)
+
+Versions of this repository published before this change were released under
+the MIT License, and recipients of those versions keep the rights they were
+granted under it.
+
+The licences above cover copyright (and, for Apache-2.0, a patent grant). They
+do not grant rights to the project's names or logos. See NOTICE and
+TRADEMARKS.md.
