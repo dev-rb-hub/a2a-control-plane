@@ -21,6 +21,7 @@ An open standard for zero-trust, low-noise agent control planes, plus a referenc
 4. Core modules stay free of I/O and take time as an argument or a clock. Tests drive `DevCluster` with `ManualClock`.
 5. Do not weaken security checks (ACLs, identity binding, challenge single-use) to make a test pass. Add a test for the denial instead.
 6. Do not claim features in READMEs that are not implemented. Update the status table in `sdk/python/README.md`.
+7. Name features for what they do. The control plane bounds and records what passes through it: it does not detect loops inside an agent, verify worker-reported usage, or see calls that bypass it. Say "delegation depth limit", "delegation audit trail" and "usage attribution" (#27, #28), not "loop prevention", "compliance lineage" or "cost governance".
 
 ## Commands (from `sdk/python`)
 

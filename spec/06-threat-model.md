@@ -75,6 +75,8 @@ flowchart LR
 | Resource exhaustion by a Worker | Size limits, capability limits, in-flight limits, registration limits ([05](05-operations.md) 5). | |
 | Reconnect storm | Mandatory jitter ([05](05-operations.md) 6). | |
 | Malicious trace context | It is untrusted input and never used for authorization. | |
+| Traffic that bypasses the control plane | For enrolled Workers, no Client-to-Worker or Worker-to-Worker path exists, enforced by default-deny ingress and by restricting Worker egress to Aggregators in the [reference network policy](../reference/k8s-network-isolation.yaml). | The control plane bounds and records only what passes through it. An agent outside the fleet, or a deployment that does not enforce the topology, is not covered. See Section 6, item 10. |
+| Private key copied from a compromised host | Keys never leave the process or SPIRE agent ([01](01-identity.md) 8); SVIDs live at most one hour; the zone is part of the identity; revocation closes the connection ([01](01-identity.md) 7). | Host-level compromise is not prevented. The attacker holds that one identity, in that one zone, until expiry or revocation (A8). A long-lived static certificate and key in a file or environment variable would give far longer exposure. |
 | Clock manipulation | Ordering uses sequence numbers, not time. `deadline_ns` and `timestamp_ns` are not used for security decisions other than deadline rejection. Voucher validity does use wall-clock time, with a bounded skew tolerance. | Deployments should keep clocks synchronized to within a few seconds, because deadlines and voucher lifetimes compare against local time. |
 
 ## 5. Confidentiality and Integrity of Payloads
@@ -94,6 +96,7 @@ flowchart LR
 7. **Federation between trust domains is out of scope** ([01](01-identity.md) 2.1).
 8. **Denial of service** by a flood of unauthenticated connections is a transport and network concern that this document does not address. Aggregators are now reachable by clients as well as by Workers and the CCR, so their network policy matters more ([reference](../reference/k8s-network-isolation.yaml)).
 9. **The reference SDK is a simulation.** Its development CA and in-memory bus do not provide the transport security this model relies on.
+10. **Coverage is limited to traffic that passes through the control plane.** Agents calling external agents, models or tools over paths the network policy leaves open cannot be seen, counted or bounded. Restricting Worker egress closes those paths but also blocks legitimate outbound calls unless they are routed through a gateway ([#8](https://github.com/dev-rb-hub/a2a-control-plane/issues/8)). Any future delegation depth limit or usage record ([#27](https://github.com/dev-rb-hub/a2a-control-plane/issues/27), [#28](https://github.com/dev-rb-hub/a2a-control-plane/issues/28)) inherits this limit.
 
 ## 7. Review Guidance
 
