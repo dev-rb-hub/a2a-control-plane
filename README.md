@@ -22,6 +22,18 @@ Current multi-agent frameworks rely heavily on noisy peer-to-peer (P2P) mesh net
 
 **a2a-control-plane** is an open-standard specification designed to harden enterprise agent clusters. It enforces a strict **Control-and-Worker (Primary/Replica) topology**, isolates trust to a cryptographically secure **Cluster Registry**, and leverages **delta-state streaming** to eliminate background network noise.
 
+## Why this exists
+Agent frameworks do the work: they run the agents and their tools. Someone still has to govern the fleet around them. This standard is that control plane, in the way a service mesh's control plane handles identity, topology and policy for services. It shares building blocks with those meshes (SPIFFE identities, mTLS). For an organisation running many agents across several teams or zones, it answers four questions:
+
+*   **Who may join?** Admission and identity for every agent, so a spoofed or rogue agent cannot register.
+*   **Who may reach whom?** A topology where agents talk only through their zone's aggregator, enforced at the network layer.
+*   **How is fleet state tracked at scale?** Deltas and adaptive heartbeats instead of quadratic polling.
+*   **What can be audited?** Records of admission, revocation and refusals that never contain task payloads.
+
+It is built on open standards (SPIFFE/SPIRE, mTLS, NATS, gRPC, Protobuf), so the control layer does not depend on one cloud or agent framework.
+
+It is a draft. Task reassignment and result fencing are specified and work in process; the in-memory ledger is implemented. Not yet specified or built: a limit on how long a chain of delegated tasks may grow (it would bound chains the control plane can see, not detect loops inside an agent), durable hand-off state across providers, discovery of agents across organisational boundaries, and attribution of worker-reported token usage. [ROADMAP.md](ROADMAP.md) lists each evaluation category and what exists today.
+
 ## 🏗️ Repository Roadmap & Architecture
 
 *   **[`/spec`](spec/)**: The formal technical standard (RFC 2119 compliant).
