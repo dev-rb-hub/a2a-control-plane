@@ -57,6 +57,23 @@ Follow-ups to the voucher-based task origination in PR #20, in the order they sh
 - **Efficient.** The traffic claim is reproducible: `sdk/python/examples/traffic_benchmark.py` compares mesh, hub and delta strategies using the SDK's real encodings. Its figures come from a simulation under stated assumptions, not a production measurement.
 - **Easy to join.** A new contributor can pick an issue, run four commands, and know from CI whether they are done.
 
+## Evaluation categories
+
+A control plane is judged on four areas. This table records what exists today. A row that says "not scoped" or "design only" is a gap, not a feature.
+
+| Category | Metric | State |
+|----------|--------|-------|
+| Registry and topology | Dynamic topology for short-lived workers | Specified (registration, heartbeats, worker state) and tested in process. No churn-specific test or metric yet |
+| Registry and topology | Cross-domain discovery latency | Not measurable: every transport is in-memory. Needs [#6](https://github.com/dev-rb-hub/a2a-control-plane/issues/6), [#7](https://github.com/dev-rb-hub/a2a-control-plane/issues/7) and the benchmark harness in [#30](https://github.com/dev-rb-hub/a2a-control-plane/issues/30) |
+| Routing and state | Handoff resilience | Reassignment and result fencing are specified and tested in process. Durable state needs [#21](https://github.com/dev-rb-hub/a2a-control-plane/issues/21); queueing needs [#10](https://github.com/dev-rb-hub/a2a-control-plane/issues/10) |
+| Routing and state | Translation overhead in the bridge | Not measured: [#30](https://github.com/dev-rb-hub/a2a-control-plane/issues/30) |
+| Observability and governance | Loop prevention | Not scoped; design only: [#27](https://github.com/dev-rb-hub/a2a-control-plane/issues/27) |
+| Observability and governance | Token and cost attribution | Not scoped; design only: [#28](https://github.com/dev-rb-hub/a2a-control-plane/issues/28) |
+| Security and trust | Zero-trust identity | SVID admission, vouchers and denial tests are implemented. Rotation overlap: [#22](https://github.com/dev-rb-hub/a2a-control-plane/issues/22). Agent Card signature checks are not specified: [#29](https://github.com/dev-rb-hub/a2a-control-plane/issues/29) |
+| Security and trust | Compliance lineage | Audit events are specified (spec 05 section 7.1) without a delegation chain: [#28](https://github.com/dev-rb-hub/a2a-control-plane/issues/28) |
+
+Coverage per category will come from the traceability matrix ([#25](https://github.com/dev-rb-hub/a2a-control-plane/issues/25)). Performance figures will be reported, not gated, by the benchmark harness ([#30](https://github.com/dev-rb-hub/a2a-control-plane/issues/30)); wall-clock thresholds are never CI gates.
+
 ## Decisions that need the maintainer
 
 | Decision | Why it matters | Where |
