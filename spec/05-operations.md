@@ -1,6 +1,6 @@
 # a2a-control-plane Specification 05: Operations
 
-**Status:** Draft v0.1.0  
+**Status:** Release candidate v1.0.0-rc.1  
 **Scope:** Defaults, state consistency and recovery, task ownership and fencing, high availability, limits, reconnection, observability, and conformance.
 
 ## 1. Conventions
@@ -20,6 +20,7 @@ Every value below MUST be configurable. Where the table says "default", an imple
 | Missed-interval multiplier | 3 | [03-protocols](03-protocols.md) Section 6 |
 | Coalescing window | 1 s | [03-protocols](03-protocols.md) Section 5.1 |
 | Maximum task attempts | 3 | [03-protocols](03-protocols.md) Section 7.3 |
+| Drain timeout | 300 s | [03-protocols](03-protocols.md) Section 8 |
 | Maximum in-flight tasks per Worker | 16 | Section 5 |
 | Maximum message size | 64 KiB | Section 5 |
 | Capabilities per Worker / key length / value length | 64 / 64 characters / 256 bytes | [03-protocols](03-protocols.md) Section 5.2 |
@@ -148,6 +149,7 @@ Further requirements:
 
 - Instances of a zone MAY share a regional bus. They MUST NOT share state that would let two instances act on the same session.
 - How Workers are spread over the instances of a zone is implementation defined. After an instance is lost, its Workers reconnect to another instance with the backoff of Section 6 and register again.
+- An instance that is shut down on purpose SHOULD first drain its Workers ([03-protocols](03-protocols.md) Section 8), so that their tasks finish instead of ending as in H4.
 - A zone with no attached instance serves no tasks. The CCR issues no voucher for it ([04-control-api](04-control-api.md) Section 4.1).
 
 ## 5. Limits and Backpressure

@@ -1,0 +1,26 @@
+# Schema checks for schemas/ (issue #11). CI runs `buf lint` and `buf breaking`.
+version: v2
+modules:
+  - path: schemas/v1
+lint:
+  use:
+    - STANDARD
+  except:
+    # The published layout is schemas/v<N>/ with imports relative to that directory
+    # (spec/03-protocols.md, section 10). Moving files to a2a/controlplane/v1/ would
+    # change every path that the spec, the SDK generator and downstream users reference.
+    - PACKAGE_DIRECTORY_MATCH
+    # Service names (Registration, Admin, TaskSubmission, TaskIntake, ZoneControl) are
+    # named in the spec and form the gRPC method paths, so they carry no "Service" suffix.
+    - SERVICE_SUFFIX
+    # Some RPCs deliberately return the same message that travels on the regional bus
+    # (TaskResult, ZoneStateReport) or share admin messages (RevokeRequest), so request and
+    # response types are not always <Rpc>Request / <Rpc>Response or unique per RPC.
+    - RPC_REQUEST_STANDARD_NAME
+    - RPC_RESPONSE_STANDARD_NAME
+    - RPC_REQUEST_RESPONSE_UNIQUE
+breaking:
+  # Schemas are append-only within v1 (GOVERNANCE.md): FILE also rejects renames, which
+  # would break generated code in other languages.
+  use:
+    - FILE

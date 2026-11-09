@@ -5,6 +5,7 @@ from __future__ import annotations
 from a2a_control_plane._proto.control_pb2 import (
     CancelTask,
     ControlMessage,
+    Drain,
     HeartbeatConfig,
     ResyncRequest,
 )
@@ -13,9 +14,11 @@ __all__ = [
     "CONTROL_TYPE",
     "CancelTask",
     "ControlMessage",
+    "Drain",
     "HeartbeatConfig",
     "ResyncRequest",
     "cancel_message",
+    "drain_message",
     "heartbeat_config_message",
     "resync_message",
 ]
@@ -29,6 +32,11 @@ def resync_message(last_applied_sequence: int = 0) -> ControlMessage:
 
 def cancel_message(task_id: str, reason: str = "") -> ControlMessage:
     return ControlMessage(cancel_task=CancelTask(task_id=task_id, reason=reason))
+
+
+def drain_message(timeout: float, reason: str = "") -> ControlMessage:
+    """``timeout`` is the drain timeout in seconds that the Aggregator applies."""
+    return ControlMessage(drain=Drain(timeout_ms=round(timeout * 1000), reason=reason))
 
 
 def heartbeat_config_message(

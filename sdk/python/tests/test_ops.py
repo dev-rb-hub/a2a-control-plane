@@ -202,6 +202,76 @@ def test_cancel_of_unreachable_worker_fails_without_reassigning() -> None:
     assert probe.lost == [("a", "t1")] and probe.reassigned == []
 
 
+# --- drain (spec 03, section 8) ----------------------------------------------------------
+
+
+def test_drain_of_idle_worker_ends_session_at_once() -> None:
+    c = DevCluster()
+    drains: list[tuple[float, str]] = []
+    w = c.add_worker("a")
+    w.on_drain(lambda timeout, reason: drains.append((timeout, reason)))
+    agg = c.aggregators["z1"]
+    assert agg.drain("a", "instance shutdown")
+    assert drains == [(300.0, "instance shutdown")] and w.draining
+    assert agg.worker_state("a") is None  # T10: session ended, registry record removed
+    assert not agg.dispatch("a", make_task("t1"))
+
+
+def test_draining_worker_finishes_its_tasks_but_gets_no_new_ones() -> None:
+    c = DevCluster()
+    probe = Probe(c)
+    w = c.add_worker("a")
+    w.on_task(lambda task: None)  # finishes later
+    c.add_worker("b").on_task(ok)
+    agg = c.aggregators["z1"]
+    agg.dispatch("a", make_task("t1"))
+    assert agg.drain("a")
+    assert agg.is_draining("a") and agg.worker_state("a") is WorkerState.EXECUTING  # no new state
+    assert not agg.dispatch("a", make_task("t2"))  # not eligible while draining
+    assert agg.dispatch("b", make_task("t2"))
+    w.complete("t1", succeeded(make_task("t1"), b"done"))
+    assert [(agent, r.task_id) for agent, r in probe.results] == [("b", "t2"), ("a", "t1")]
+    assert agg.worker_state("a") is None and not agg.is_draining("a")
+
+
+def test_drain_timeout_reassigns_tasks_still_in_flight() -> None:
+    c = DevCluster(drain_timeout=10)
+    probe = Probe(c)
+    c.add_worker("a").on_task(lambda task: None)  # never finishes
+    c.add_worker("b").on_task(ok)
+    agg = c.aggregators["z1"]
+    agg.dispatch("a", make_task("t1"))
+    assert agg.drain("a")
+    c.advance(5)
+    assert agg.worker_state("a") is WorkerState.EXECUTING
+    c.advance(5)
+    assert agg.worker_state("a") is None
+    assert probe.reassigned == [(2, "a", "b")]
+    [(agent, result)] = probe.results
+    assert agent == "b" and result.task_id == "t1"
+
+
+def test_drain_rejects_unknown_or_already_draining_workers() -> None:
+    c = DevCluster()
+    c.add_worker("a").on_task(lambda task: None)
+    agg = c.aggregators["z1"]
+    agg.dispatch("a", make_task("t1"))
+    assert not agg.drain("ghost")
+    assert agg.drain("a", timeout=1)
+    assert not agg.drain("a")
+
+
+def test_worker_reregistered_after_drain_is_eligible_again() -> None:
+    c = DevCluster()
+    w = c.add_worker("a")
+    w.on_task(ok)
+    agg = c.aggregators["z1"]
+    assert agg.drain("a")
+    w.register({"skill": "x"})
+    assert not w.draining and not agg.is_draining("a")
+    assert agg.dispatch("a", make_task("t1"))
+
+
 def test_deferred_completion_and_concurrent_tasks(caplog: pytest.LogCaptureFixture) -> None:
     c = DevCluster()
     probe = Probe(c)

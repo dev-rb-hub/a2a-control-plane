@@ -1,6 +1,6 @@
 # a2a-control-plane Specification 01: Identity
 
-**Status:** Draft v0.1.0  
+**Status:** Release candidate v1.0.0-rc.1  
 **Scope:** Workload identity, mTLS requirements, and credential lifecycle.
 
 ## 1. Conventions

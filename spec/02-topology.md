@@ -1,6 +1,6 @@
 # a2a-control-plane Specification 02: Topology
 
-**Status:** Draft v0.1.0  
+**Status:** Release candidate v1.0.0-rc.1  
 **Scope:** Component boundaries, Worker Agent lifecycle, and message topic namespace.
 
 ## 1. Conventions
@@ -115,9 +115,9 @@ stateDiagram-v2
     Idle --> Degraded: liveness missed or self-reported fault
     Executing --> Degraded: liveness missed or self-reported fault
     Degraded --> Idle: recovery confirmed
-    Degraded --> Unregistered: grace period expired, identity revoked, or SVID expired
-    Idle --> Unregistered: identity revoked
-    Executing --> Unregistered: identity revoked
+    Degraded --> Unregistered: grace period expired, identity revoked, SVID expired, or drain ended
+    Idle --> Unregistered: identity revoked or drain ended
+    Executing --> Unregistered: identity revoked or drain ended
 ```
 
 | # | From | To | Trigger | Required behavior |
@@ -131,7 +131,7 @@ stateDiagram-v2
 | T7 | `Idle` or `Executing` | `Degraded` | The Aggregator misses the Worker's liveness deadline (see [03-protocols](03-protocols.md) Section 6), or the Worker reports a fault by advertising `cp.health` with value `fault` ([03-protocols](03-protocols.md) Section 5.2). | The Aggregator MUST stop dispatching new tasks to the Worker and MUST report the change to the CCR. |
 | T8 | `Degraded` | `Idle` | Liveness is restored and the Worker is not reporting a fault. | The Aggregator MUST resume dispatch only after it has reported the change to the CCR. |
 | T9 | `Degraded` | `Unregistered` | The recovery grace period expires. | The Aggregator MUST close the connection and the CCR MUST mark the Worker unregistered. Tasks assigned to the Worker MUST be reassigned or failed. |
-| T10 | Any registered state | `Unregistered` | Identity revoked or SVID expired without renewal, or the session replaced by a new one. | The Aggregator MUST close the connection immediately. Tasks assigned to the Worker MUST be reassigned or failed. |
+| T10 | Any registered state | `Unregistered` | Identity revoked or SVID expired without renewal, the session replaced by a new one, or a drain ended ([03-protocols](03-protocols.md) Section 8). | The Aggregator MUST close the connection immediately. Tasks assigned to the Worker MUST be reassigned or failed. |
 | T11 | `Registered` | `Unregistered` | The registration timeout expires before the initial snapshot is accepted. | The Aggregator MUST close the connection and MUST report the change to the CCR. |
 
 A Worker does not report `Idle` or `Executing` itself. The Aggregator derives them from the tasks it dispatches and the results it receives, and reports them to the CCR ([03-protocols](03-protocols.md) Section 9).
@@ -140,7 +140,7 @@ Any transition not listed in the table MUST NOT occur. An implementation receivi
 
 ### 5.3 State Invariants
 
-- A Worker MUST NOT receive tasks in any state other than `Idle` or `Executing`.
+- A Worker MUST NOT receive tasks in any state other than `Idle` or `Executing`, nor while it is draining ([03-protocols](03-protocols.md) Section 8).
 - The CCR MUST treat the Aggregator's view as authoritative for `Idle`, `Executing`, and `Degraded`, and MUST treat its own record as authoritative for `Unregistered`, `Challenged`, and `Registered`.
 - The defaults are listed in [05-operations](05-operations.md) Section 1.1: challenge timeout 10 seconds, registration timeout 30 seconds, recovery grace period 120 seconds. Each MUST be configurable.
 

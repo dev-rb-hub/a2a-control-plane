@@ -9,6 +9,25 @@ permissions:
   contents: read
 
 jobs:
+  schemas:
+    name: Schemas (buf lint and breaking)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: bufbuild/buf-action@v1
+        with:
+          version: 1.75.0
+          setup_only: true
+      - name: Lint
+        run: buf lint
+      - name: Breaking changes
+        # Pull requests compare with their base; pushes compare with the previous main.
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: buf breaking --against ".git#ref=${BASE},subdir=schemas/v1"
+
   sdk-python:
     name: Python SDK (py${{ matrix.python }}, protobuf ${{ matrix.protobuf }})
     runs-on: ubuntu-latest

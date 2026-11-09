@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rcontrol.proto\x12\x13\x61\x32\x61.controlplane.v1\"\xcb\x01\n\x0e\x43ontrolMessage\x12\x36\n\x0b\x63\x61ncel_task\x18\x01 \x01(\x0b\x32\x1f.a2a.controlplane.v1.CancelTaskH\x00\x12@\n\x10heartbeat_config\x18\x02 \x01(\x0b\x32$.a2a.controlplane.v1.HeartbeatConfigH\x00\x12\x34\n\x06resync\x18\x03 \x01(\x0b\x32\".a2a.controlplane.v1.ResyncRequestH\x00\x42\t\n\x07\x63ommand\".\n\rResyncRequest\x12\x1d\n\x15last_applied_sequence\x18\x01 \x01(\x04\"-\n\nCancelTask\x12\x0f\n\x07task_id\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\"]\n\x0fHeartbeatConfig\x12\x18\n\x10\x62\x61se_interval_ms\x18\x01 \x01(\r\x12\x17\n\x0fmax_interval_ms\x18\x02 \x01(\r\x12\x17\n\x0fmiss_multiplier\x18\x03 \x01(\rBy\n%io.github.devrbhub.a2acontrolplane.v1P\x01Z8github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1\xaa\x02\x13\x41\x32\x41.ControlPlane.V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rcontrol.proto\x12\x13\x61\x32\x61.controlplane.v1\"\xf8\x01\n\x0e\x43ontrolMessage\x12\x36\n\x0b\x63\x61ncel_task\x18\x01 \x01(\x0b\x32\x1f.a2a.controlplane.v1.CancelTaskH\x00\x12@\n\x10heartbeat_config\x18\x02 \x01(\x0b\x32$.a2a.controlplane.v1.HeartbeatConfigH\x00\x12\x34\n\x06resync\x18\x03 \x01(\x0b\x32\".a2a.controlplane.v1.ResyncRequestH\x00\x12+\n\x05\x64rain\x18\x04 \x01(\x0b\x32\x1a.a2a.controlplane.v1.DrainH\x00\x42\t\n\x07\x63ommand\"+\n\x05\x44rain\x12\x12\n\ntimeout_ms\x18\x01 \x01(\r\x12\x0e\n\x06reason\x18\x02 \x01(\t\".\n\rResyncRequest\x12\x1d\n\x15last_applied_sequence\x18\x01 \x01(\x04\"-\n\nCancelTask\x12\x0f\n\x07task_id\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\"]\n\x0fHeartbeatConfig\x12\x18\n\x10\x62\x61se_interval_ms\x18\x01 \x01(\r\x12\x17\n\x0fmax_interval_ms\x18\x02 \x01(\r\x12\x17\n\x0fmiss_multiplier\x18\x03 \x01(\rBy\n%io.github.devrbhub.a2acontrolplane.v1P\x01Z8github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1\xaa\x02\x13\x41\x32\x41.ControlPlane.V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,11 +33,13 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n%io.github.devrbhub.a2acontrolplane.v1P\001Z8github.com/dev-rb-hub/a2a-control-plane/schemas/v1;a2av1\252\002\023A2A.ControlPlane.V1'
   _globals['_CONTROLMESSAGE']._serialized_start=39
-  _globals['_CONTROLMESSAGE']._serialized_end=242
-  _globals['_RESYNCREQUEST']._serialized_start=244
-  _globals['_RESYNCREQUEST']._serialized_end=290
-  _globals['_CANCELTASK']._serialized_start=292
-  _globals['_CANCELTASK']._serialized_end=337
-  _globals['_HEARTBEATCONFIG']._serialized_start=339
-  _globals['_HEARTBEATCONFIG']._serialized_end=432
+  _globals['_CONTROLMESSAGE']._serialized_end=287
+  _globals['_DRAIN']._serialized_start=289
+  _globals['_DRAIN']._serialized_end=332
+  _globals['_RESYNCREQUEST']._serialized_start=334
+  _globals['_RESYNCREQUEST']._serialized_end=380
+  _globals['_CANCELTASK']._serialized_start=382
+  _globals['_CANCELTASK']._serialized_end=427
+  _globals['_HEARTBEATCONFIG']._serialized_start=429
+  _globals['_HEARTBEATCONFIG']._serialized_end=522
 # @@protoc_insertion_point(module_scope)

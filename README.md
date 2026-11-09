@@ -1,8 +1,8 @@
 # a2a-control-plane: Open Standard Specification for High-Scale Agentic Architectures (A2A)
 
-[![Spec Version](https://img.shields.io/badge/spec-v0.1.0--draft-blue)](spec/)
+[![Spec Version](https://img.shields.io/badge/spec-v1.0.0--rc.1-blue)](spec/)
 [![License](https://img.shields.io/badge/license-Apache--2.0%20%2B%20CC%20BY--ND%204.0-green)](LICENSE)
-[![Status](https://img.shields.io/badge/status-draft-orange)](GOVERNANCE.md)
+[![Status](https://img.shields.io/badge/status-release%20candidate-yellow)](GOVERNANCE.md)
 
 > An open standard for **zero-trust agent-to-agent (A2A) control planes**: secure, low-noise orchestration of large multi-agent AI systems using SPIFFE/SPIRE identity, mTLS, regional aggregators, NATS messaging, gRPC, and Protocol Buffers.
 
@@ -32,7 +32,7 @@ Agent frameworks do the work: they run the agents and their tools. Someone still
 
 It is built on open standards (SPIFFE/SPIRE, mTLS, NATS, gRPC, Protobuf), so the control layer does not depend on one cloud or agent framework.
 
-It is a draft. Task reassignment and result fencing are specified and work in process; the in-memory ledger is implemented. Not yet specified or built: a limit on how long a chain of delegated tasks may grow (it would bound chains the control plane can see, not detect loops inside an agent), durable hand-off state across providers, discovery of agents across organisational boundaries, and attribution of worker-reported token usage. [ROADMAP.md](ROADMAP.md) lists each evaluation category and what exists today.
+It is a release candidate (1.0.0-rc.1): the specification is frozen except for fixes found by implementers. Task reassignment and result fencing are specified and work in process; the in-memory ledger is implemented. Not yet specified or built: a limit on how long a chain of delegated tasks may grow (it would bound chains the control plane can see, not detect loops inside an agent), durable hand-off state across providers, discovery of agents across organisational boundaries, and attribution of worker-reported token usage. [ROADMAP.md](ROADMAP.md) lists each evaluation category and what exists today.
 
 ## 🏗️ Repository Roadmap & Architecture
 

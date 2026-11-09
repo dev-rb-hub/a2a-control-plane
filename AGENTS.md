@@ -35,6 +35,8 @@ python examples/cluster_demo.py
 
 All of these must pass before you finish. They also run in CI.
 
+After editing a `.proto`, also run `buf lint` and `buf breaking --against ".git#ref=main,subdir=schemas/v1"` from the repository root (for example with `npx @bufbuild/buf@1.75.0`). CI runs both; the excepted lint rules are explained in `buf.yaml`.
+
 ## Where the work is
 
 Open GitHub issues are the backlog, labeled by area (`spec`, `sdk`, `transport`, `bridge`). Issues marked `agent-friendly` are self-contained: they name the files to change and the acceptance tests. Prefer those. Large design questions are labeled `design` and need a discussion on the issue before code.

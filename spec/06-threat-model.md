@@ -1,6 +1,6 @@
 # a2a-control-plane Specification 06: Threat Model
 
-**Status:** Draft v0.1.0  
+**Status:** Release candidate v1.0.0-rc.1  
 **Scope:** Assets, trust boundaries, adversaries, what the specification prevents, and what it leaves open.
 
 This document is informative. It explains why the normative rules in [01](01-identity.md) to [05](05-operations.md) are shaped as they are, and it records the risks that remain.
