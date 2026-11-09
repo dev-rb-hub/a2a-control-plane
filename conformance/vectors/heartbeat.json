@@ -1,0 +1,327 @@
+{
+  "default_params": [
+    5.0,
+    60.0,
+    3
+  ],
+  "invalid_params": [
+    {
+      "params": [
+        0.0,
+        60.0,
+        3
+      ],
+      "valid": false
+    },
+    {
+      "params": [
+        10.0,
+        5.0,
+        3
+      ],
+      "valid": false
+    },
+    {
+      "params": [
+        5.0,
+        60.0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "params": [
+        -1.0,
+        60.0,
+        3
+      ],
+      "valid": false
+    }
+  ],
+  "scenarios": [
+    {
+      "expected": [
+        {
+          "base_interval": 5.0,
+          "deadline": 15.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 5.0,
+          "max_interval": 60.0,
+          "miss_multiplier": 3,
+          "next_due": 5.0
+        },
+        {
+          "base_interval": 5.0,
+          "deadline": 35.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 10.0,
+          "max_interval": 60.0,
+          "miss_multiplier": 3,
+          "next_due": 15.0
+        },
+        {
+          "base_interval": 5.0,
+          "deadline": 75.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 20.0,
+          "max_interval": 60.0,
+          "miss_multiplier": 3,
+          "next_due": 35.0
+        },
+        {
+          "base_interval": 5.0,
+          "deadline": 155.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 40.0,
+          "max_interval": 60.0,
+          "miss_multiplier": 3,
+          "next_due": 75.0
+        },
+        {
+          "base_interval": 5.0,
+          "deadline": 255.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 60.0,
+          "max_interval": 60.0,
+          "miss_multiplier": 3,
+          "next_due": 135.0
+        },
+        {
+          "base_interval": 5.0,
+          "deadline": 315.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 60.0,
+          "max_interval": 60.0,
+          "miss_multiplier": 3,
+          "next_due": 195.0
+        },
+        {
+          "base_interval": 5.0,
+          "deadline": 375.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 60.0,
+          "max_interval": 60.0,
+          "miss_multiplier": 3,
+          "next_due": 255.0
+        },
+        {
+          "base_interval": 5.0,
+          "deadline": 215.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 5.0,
+          "max_interval": 60.0,
+          "miss_multiplier": 3,
+          "next_due": 205.0
+        },
+        {
+          "base_interval": 5.0,
+          "deadline": 235.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 10.0,
+          "max_interval": 60.0,
+          "miss_multiplier": 3,
+          "next_due": 215.0
+        }
+      ],
+      "name": "backoff to max then reset",
+      "params": [
+        5.0,
+        60.0,
+        3
+      ],
+      "steps": [
+        [
+          "state_change",
+          0.0
+        ],
+        [
+          "heartbeat",
+          5.0
+        ],
+        [
+          "heartbeat",
+          15.0
+        ],
+        [
+          "heartbeat",
+          35.0
+        ],
+        [
+          "heartbeat",
+          75.0
+        ],
+        [
+          "heartbeat",
+          135.0
+        ],
+        [
+          "heartbeat",
+          195.0
+        ],
+        [
+          "state_change",
+          200.0
+        ],
+        [
+          "heartbeat",
+          205.0
+        ]
+      ]
+    },
+    {
+      "expected": [
+        {
+          "base_interval": 5.0,
+          "deadline": 15.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 5.0,
+          "max_interval": 60.0,
+          "miss_multiplier": 3,
+          "next_due": 5.0
+        },
+        {
+          "base_interval": 5.0,
+          "deadline": 35.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 10.0,
+          "max_interval": 60.0,
+          "miss_multiplier": 3,
+          "next_due": 15.0
+        },
+        {
+          "base_interval": 5.0,
+          "deadline": 75.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 20.0,
+          "max_interval": 60.0,
+          "miss_multiplier": 3,
+          "next_due": 35.0
+        },
+        {
+          "accepted": true,
+          "base_interval": 1.0,
+          "deadline": 31.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 8.0,
+          "max_interval": 8.0,
+          "miss_multiplier": 2,
+          "next_due": 23.0
+        },
+        {
+          "accepted": false,
+          "base_interval": 1.0,
+          "deadline": 31.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 8.0,
+          "max_interval": 8.0,
+          "miss_multiplier": 2,
+          "next_due": 23.0
+        },
+        {
+          "accepted": true,
+          "base_interval": 1.0,
+          "deadline": 31.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 8.0,
+          "max_interval": 8.0,
+          "miss_multiplier": 2,
+          "next_due": 23.0
+        },
+        {
+          "base_interval": 1.0,
+          "deadline": 36.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 8.0,
+          "max_interval": 8.0,
+          "miss_multiplier": 2,
+          "next_due": 28.0
+        },
+        {
+          "accepted": false,
+          "base_interval": 1.0,
+          "deadline": 36.0,
+          "degraded_after_deadline": true,
+          "degraded_at_deadline": false,
+          "interval": 8.0,
+          "max_interval": 8.0,
+          "miss_multiplier": 2,
+          "next_due": 28.0
+        }
+      ],
+      "name": "configure clamps the current interval",
+      "params": [
+        5.0,
+        60.0,
+        3
+      ],
+      "steps": [
+        [
+          "state_change",
+          0.0
+        ],
+        [
+          "heartbeat",
+          5.0
+        ],
+        [
+          "heartbeat",
+          15.0
+        ],
+        [
+          "configure",
+          [
+            1.0,
+            8.0,
+            2
+          ]
+        ],
+        [
+          "configure",
+          [
+            10.0,
+            5.0,
+            0
+          ]
+        ],
+        [
+          "configure",
+          [
+            null,
+            null,
+            0
+          ]
+        ],
+        [
+          "heartbeat",
+          20.0
+        ],
+        [
+          "configure",
+          [
+            12.0,
+            null,
+            null
+          ]
+        ]
+      ]
+    }
+  ],
+  "vector": "heartbeat",
+  "version": 1
+}

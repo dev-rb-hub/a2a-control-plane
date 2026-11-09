@@ -6,3 +6,15 @@ __pycache__/
 .mypy_cache/
 dist/
 build/
+
+# Rust: build output only. Cargo.lock is committed for reproducible CI and test builds.
+target/
+**/*.rs.bk
+*.pdb
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

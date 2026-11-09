@@ -37,6 +37,14 @@ All of these must pass before you finish. They also run in CI.
 
 After editing a `.proto`, also run `buf lint` and `buf breaking --against ".git#ref=main,subdir=schemas/v1"` from the repository root (for example with `npx @bufbuild/buf@1.75.0`). CI runs both; the excepted lint rules are explained in `buf.yaml`.
 
+After changing behaviour in the Python core, run `python scripts/export_vectors.py` (from `sdk/python`) and commit the regenerated `conformance/vectors/`; `tests/test_vectors.py` fails otherwise. Then run the Rust SDK checks (from `sdk/rust`), which test against those vectors:
+
+```
+cargo fmt --check
+cargo clippy --all-targets -- -D warnings
+cargo test
+```
+
 ## Where the work is
 
 Open GitHub issues are the backlog, labeled by area (`spec`, `sdk`, `transport`, `bridge`). Issues marked `agent-friendly` are self-contained: they name the files to change and the acceptance tests. Prefer those. Large design questions are labeled `design` and need a discussion on the issue before code.

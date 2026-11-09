@@ -1,0 +1,23 @@
+[package]
+name = "a2a-control-plane"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Rust SDK for the a2a-control-plane open standard: I/O-free core"
+license = "Apache-2.0"
+repository = "https://github.com/dev-rb-hub/a2a-control-plane"
+publish = false
+
+[dependencies]
+ed25519-dalek = "3.0.0"
+prost = "0.14.4"
+sha2 = "0.11.1"
+
+[build-dependencies]
+prost-build = "0.14.4"
+protoc-bin-vendored = "3.3.0"
+
+[dev-dependencies]
+hex = "0.4.3"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"

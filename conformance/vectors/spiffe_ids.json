@@ -1,0 +1,112 @@
+{
+  "cases": [
+    {
+      "agent_id": null,
+      "canonical": "spiffe://example.org/registry",
+      "client_id": null,
+      "role": "registry",
+      "trust_domain": "example.org",
+      "uri": "spiffe://example.org/registry",
+      "valid": true,
+      "zone_id": null
+    },
+    {
+      "agent_id": null,
+      "canonical": "spiffe://example.org/zone/eu-west-1/aggregator",
+      "client_id": null,
+      "role": "aggregator",
+      "trust_domain": "example.org",
+      "uri": "spiffe://example.org/zone/eu-west-1/aggregator",
+      "valid": true,
+      "zone_id": "eu-west-1"
+    },
+    {
+      "agent_id": "worker-7",
+      "canonical": "spiffe://example.org/zone/eu-west-1/agent/worker-7",
+      "client_id": null,
+      "role": "worker",
+      "trust_domain": "example.org",
+      "uri": "spiffe://example.org/zone/eu-west-1/agent/worker-7",
+      "valid": true,
+      "zone_id": "eu-west-1"
+    },
+    {
+      "agent_id": null,
+      "canonical": "spiffe://example.org/client/batch_1",
+      "client_id": "batch_1",
+      "role": "client",
+      "trust_domain": "example.org",
+      "uri": "spiffe://example.org/client/batch_1",
+      "valid": true,
+      "zone_id": null
+    },
+    {
+      "agent_id": null,
+      "canonical": "spiffe://a.b-c_d.0/registry",
+      "client_id": null,
+      "role": "registry",
+      "trust_domain": "a.b-c_d.0",
+      "uri": "spiffe://a.b-c_d.0/registry",
+      "valid": true,
+      "zone_id": null
+    },
+    {
+      "uri": "spiffe://Example.org/registry",
+      "valid": false
+    },
+    {
+      "uri": "spiffe://example.org",
+      "valid": false
+    },
+    {
+      "uri": "spiffe://example.org/",
+      "valid": false
+    },
+    {
+      "uri": "spiffe:///registry",
+      "valid": false
+    },
+    {
+      "uri": "http://example.org/registry",
+      "valid": false
+    },
+    {
+      "uri": "spiffe://example.org/registry/extra",
+      "valid": false
+    },
+    {
+      "uri": "spiffe://example.org/zone/eu-west-1",
+      "valid": false
+    },
+    {
+      "uri": "spiffe://example.org/zone/eu.west/aggregator",
+      "valid": false
+    },
+    {
+      "uri": "spiffe://example.org/zone/z1/agent/",
+      "valid": false
+    },
+    {
+      "uri": "spiffe://example.org/zone/z1/agent/a/b",
+      "valid": false
+    },
+    {
+      "uri": "spiffe://example.org/zone/*/aggregator",
+      "valid": false
+    },
+    {
+      "uri": "spiffe://example.org/client/",
+      "valid": false
+    },
+    {
+      "uri": "spiffe://example.org/admin",
+      "valid": false
+    },
+    {
+      "uri": "spiffe://exa mple.org/registry",
+      "valid": false
+    }
+  ],
+  "vector": "spiffe_ids",
+  "version": 1
+}

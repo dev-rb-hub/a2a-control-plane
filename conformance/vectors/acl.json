@@ -1,0 +1,936 @@
+{
+  "cases": [
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": true,
+      "target": "a2a.zone.z1.agent.w1.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": true,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": true,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.results"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": true,
+      "target": "a2a.zone.z1.agent.w1.control"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.results"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.control"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.results"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.control"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.results"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.control"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.aggregator.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.aggregator.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.aggregator.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.*.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.*.results"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.*.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.*.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.*.agent.w1.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.*"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.>"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.*.aggregator.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.>"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.>"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.state.>"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "not a subject"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.results"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.control"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.results"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.control"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": true,
+      "target": "a2a.zone.z2.agent.w1.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": true,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": true,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.results"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": true,
+      "target": "a2a.zone.z2.agent.w1.control"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.results"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.control"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.aggregator.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.aggregator.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.aggregator.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.*.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.*.results"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.*.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.*.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.*.agent.w1.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.*"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.>"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.*.aggregator.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.>"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.>"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.state.>"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z2/agent/w1",
+      "publish": false,
+      "subscribe": false,
+      "target": "not a subject"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": true,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": true,
+      "target": "a2a.zone.z1.agent.w1.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": true,
+      "target": "a2a.zone.z1.agent.w1.results"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": true,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.control"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": true,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": true,
+      "target": "a2a.zone.z1.agent.w2.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": true,
+      "target": "a2a.zone.z1.agent.w2.results"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": true,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.control"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.results"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.control"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.results"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.control"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": true,
+      "subscribe": false,
+      "target": "a2a.zone.z1.aggregator.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.aggregator.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.aggregator.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": true,
+      "target": "a2a.zone.z1.agent.*.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": true,
+      "target": "a2a.zone.z1.agent.*.results"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.*.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.*.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.*.agent.w1.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.*"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.>"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.*.aggregator.state"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.>"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.>"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.state.>"
+    },
+    {
+      "identity": "spiffe://example.org/zone/z1/aggregator",
+      "publish": false,
+      "subscribe": false,
+      "target": "not a subject"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.state"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.results"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.control"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.state"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.results"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.control"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.state"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.results"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.control"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.state"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.results"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.control"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.aggregator.state"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.aggregator.state"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.aggregator.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.*.state"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.*.results"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.*.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.*.state"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.*.agent.w1.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.*"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.>"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": true,
+      "target": "a2a.zone.*.aggregator.state"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": true,
+      "target": "a2a.zone.>"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.>"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.state.>"
+    },
+    {
+      "identity": "spiffe://example.org/registry",
+      "publish": false,
+      "subscribe": false,
+      "target": "not a subject"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.state"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.results"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.control"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.state"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.results"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w2.control"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.state"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.results"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w1.control"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.state"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.results"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.w2.control"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.aggregator.state"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.aggregator.state"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.aggregator.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.*.state"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.*.results"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.*.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z2.agent.*.state"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.*.agent.w1.tasks"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.*"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.>"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.*.aggregator.state"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.>"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.>"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "a2a.zone.z1.agent.w1.state.>"
+    },
+    {
+      "identity": "spiffe://example.org/client/c1",
+      "publish": false,
+      "subscribe": false,
+      "target": "not a subject"
+    }
+  ],
+  "vector": "acl",
+  "version": 1
+}

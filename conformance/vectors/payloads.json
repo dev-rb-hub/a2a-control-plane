@@ -1,0 +1,80 @@
+{
+  "challenge_payload": [
+    {
+      "channel_binding": "",
+      "nonce": "000102030405060708090a0b0c0d0e0f",
+      "payload": "000000126132612d63702f76312f726567697374657200000010000102030405060708090a0b0c0d0e0f000000257370696666653a2f2f6578616d706c652e6f72672f7a6f6e652f7a312f6167656e742f773100000020e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b85500000000",
+      "register_request": "",
+      "worker": "spiffe://example.org/zone/z1/agent/w1"
+    },
+    {
+      "channel_binding": "0101010101010101010101010101010101010101010101010101010101010101",
+      "nonce": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "payload": "000000126132612d63702f76312f726567697374657200000020aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa000000327370696666653a2f2f6578616d706c652e6f72672f7a6f6e652f65752d776573742d312f6167656e742f776f726b65722d3700000020fb8da7eb5b1b399e7321179dac9e9f65773d7331e1e30554e3911e4325e1ef19000000200101010101010101010101010101010101010101010101010101010101010101",
+      "register_request": "0801",
+      "worker": "spiffe://example.org/zone/eu-west-1/agent/worker-7"
+    }
+  ],
+  "length_prefixed": [
+    {
+      "encoded": "",
+      "fields": []
+    },
+    {
+      "encoded": "00000000",
+      "fields": [
+        ""
+      ]
+    },
+    {
+      "encoded": "0000000161000000026263",
+      "fields": [
+        "61",
+        "6263"
+      ]
+    },
+    {
+      "encoded": "000000030000000000000000000001ff",
+      "fields": [
+        "000000",
+        "",
+        "ff"
+      ]
+    }
+  ],
+  "task_digest": [
+    {
+      "content_type": "",
+      "deadline_ns": 0,
+      "digest": "dd2922678045644b374d3edeaf7aeb7f3e42d79ddba5140c2c9c9b85b3d6c3bf",
+      "kind": "",
+      "payload": "",
+      "required_capabilities": {}
+    },
+    {
+      "content_type": "application/json",
+      "deadline_ns": 1800000000123456789,
+      "digest": "082fb8ec78cf3c56fb754963f889c0a91a28c9e4e630f509aae0310a3e3c414f",
+      "kind": "summarize",
+      "payload": "00017061796c6f6164",
+      "required_capabilities": {
+        "cp.health": "ok",
+        "lang": "en",
+        "skill": "summarize"
+      }
+    },
+    {
+      "content_type": "",
+      "deadline_ns": 0,
+      "digest": "10b9684e4a2659f95fdae70183fdc4e23040f7bd57dba2770ee48f13a86a23a4",
+      "kind": "ü",
+      "payload": "c3a9",
+      "required_capabilities": {
+        "a": "1",
+        "b": "2"
+      }
+    }
+  ],
+  "vector": "payloads",
+  "version": 1
+}
