@@ -23,6 +23,14 @@ from a2a_control_plane.identity import SpiffeId
 MAX_SVID_LIFETIME_SECONDS = 3600
 _ROOT_NOT_BEFORE = dt.datetime(2000, 1, 1, tzinfo=dt.UTC)
 _ROOT_NOT_AFTER = dt.datetime(2099, 1, 1, tzinfo=dt.UTC)
+# cryptography parses extensions lazily, so a malformed peer certificate can raise any of these
+# on first access; DuplicateExtension and UnsupportedGeneralNameType are not ValueErrors.
+_PARSE_ERRORS: tuple[type[Exception], ...] = (
+    ValueError,
+    TypeError,
+    x509.DuplicateExtension,
+    x509.UnsupportedGeneralNameType,
+)
 
 
 class CertificateError(ValueError):
@@ -135,6 +143,8 @@ def spiffe_id_from_certificate(cert: x509.Certificate) -> SpiffeId:
         san = cert.extensions.get_extension_for_class(x509.SubjectAlternativeName).value
     except x509.ExtensionNotFound as exc:
         raise CertificateError("certificate has no subject alternative name") from exc
+    except _PARSE_ERRORS as exc:
+        raise CertificateError(f"malformed certificate extensions: {exc}") from exc
     uris = san.get_values_for_type(x509.UniformResourceIdentifier)
     if len(uris) != 1:
         raise CertificateError(f"expected exactly one URI SAN, found {len(uris)}")
@@ -169,8 +179,24 @@ def verify_svid_chain(
     ``chain`` is the leaf alone: the dev PKI has no intermediates, so the leaf must be issued
     directly by a certificate in ``trust_bundle``. Checks signature, validity at ``now``, the
     leaf profile (not a CA, digitalSignature), a lifetime of at most one hour, exactly one URI
-    SAN, and that the ID belongs to ``trust_domain``.
+    SAN, and that the ID belongs to ``trust_domain``. Every rejection, including a certificate
+    that ``cryptography`` cannot parse lazily (for example a duplicate extension), raises
+    CertificateError.
     """
+    try:
+        return _verify_svid_chain(chain, trust_bundle, trust_domain, now)
+    except CertificateError:
+        raise
+    except _PARSE_ERRORS as exc:
+        raise CertificateError(f"malformed certificate: {exc}") from exc
+
+
+def _verify_svid_chain(
+    chain: Sequence[x509.Certificate],
+    trust_bundle: Sequence[x509.Certificate],
+    trust_domain: str,
+    now: float,
+) -> SpiffeId:
     if len(chain) != 1:
         raise CertificateError("chain must contain exactly the leaf certificate")
     leaf = chain[0]

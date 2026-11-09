@@ -1,4 +1,5 @@
 import datetime as dt
+from typing import cast
 
 import pytest
 from cryptography import x509
@@ -179,3 +180,30 @@ def test_extra_chain_certs_and_bad_pem_rejected() -> None:
         verify_svid_pem(svid.cert_chain_pem + svid.trust_bundle_pem, svid.trust_bundle_pem, TD, NOW)
     with pytest.raises(CertificateError, match="PEM"):
         verify_svid_pem(b"garbage", svid.trust_bundle_pem, TD, NOW)
+
+
+class _DuplicateExtensionLeaf:
+    """Behaves like a parsed leaf whose extensions fail lazily, as cryptography does for a
+    certificate that carries the same extension twice."""
+
+    def __init__(self, real: x509.Certificate) -> None:
+        self._real = real
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._real, name)
+
+    @property
+    def extensions(self) -> x509.Extensions:
+        raise x509.DuplicateExtension(
+            "Duplicate 2.5.29.19 extension found", x509.oid.ExtensionOID.BASIC_CONSTRAINTS
+        )
+
+
+def test_lazily_malformed_extensions_raise_certificate_error() -> None:
+    ca = DevCA()
+    real = _leaf(ca.issue_x509(WORKER, NOW).cert_chain_pem)[0]
+    leaf = cast(x509.Certificate, _DuplicateExtensionLeaf(real))
+    with pytest.raises(CertificateError, match="malformed"):
+        verify_svid_chain([leaf], _bundle(ca), TD, NOW)
+    with pytest.raises(CertificateError, match="malformed"):
+        spiffe_id_from_certificate(leaf)
