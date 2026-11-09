@@ -9,7 +9,8 @@ This package is independent of, and not affiliated with, the Linux Foundation Ag
 | Layer | Modules | Status |
 |-------|---------|--------|
 | Core (pure logic, no I/O) | `tokens`, `identity`, `subjects`, `state`, `heartbeat`, `delta`, `tasks`, `control`, `reports`, `backoff` | implemented |
-| Roles over an in-memory bus | `Registry`, `Aggregator`, `WorkerClient`, `InMemoryBus` | implemented |
+| Roles over any `Bus` | `Registry`, `Aggregator`, `WorkerClient` typed against the `Bus`/`Session` protocols; `InMemoryBus` is the reference transport | implemented |
+| Transport conformance suite | `tests/test_bus_conformance.py`: ACLs, identity binding, wildcards, ordering, size limit, closed sessions. A new transport adds one entry to `BUS_FACTORIES` | implemented, run against `InMemoryBus` |
 | Registration relay (CCR as root, Aggregator as intermediary), version and feature negotiation, Aggregator attachment with epochs | spec 04, sections 2, 3, 5 | implemented in process |
 | Sequence numbers, gap detection, snapshot recovery (Worker to Aggregator, Aggregator to CCR), result fencing | spec 05, sections 2, 3 | implemented |
 | Task origination by voucher (the CCR signs a voucher and sees no payload; the client submits to the Aggregator, which checks it), selection by `required_capabilities`, revocation | spec 04, sections 4, 6 | implemented in process |
@@ -21,7 +22,7 @@ This package is independent of, and not affiliated with, the Linux Foundation Ag
 | gRPC service definitions (`Registration`, `Admin`, `TaskSubmission`, `ZoneControl`) | `schemas/v1/services.proto` ([#2](https://github.com/dev-rb-hub/a2a-control-plane/issues/2)) | schema only; no server or client yet |
 | `recovery.replay` (durable bus), a JetStream-backed durable task ledger, CCR replication and election, Aggregator health checks, `Admin.ListWorkers` over RPC, task queueing, session resumption and overlapping SVIDs (the latter is only sketched in spec 04 section 9), metrics and audit export | spec 04, 05 | specified, not implemented |
 | TLS-bound registration (RFC 9266 channel binding), ECDSA P-256 SVID signatures, and validation of the CCR's SVID chain on a voucher | spec 04, sections 2.3, 4.3 | not implemented: the in-memory transport has no TLS, so the channel binding is empty, `DevCA` signs with Ed25519, and `signer_chain` is not validated |
-| Bus protocol, X.509 dev certificates, runtime for the accepted async design ([RFC 0005](../../rfcs/0005-async-model.md)) | [#3](https://github.com/dev-rb-hub/a2a-control-plane/issues/3), [#4](https://github.com/dev-rb-hub/a2a-control-plane/issues/4) | planned |
+| Runtime for the accepted async design: single-owner event loop, queued delivery, sync facade ([RFC 0005](../../rfcs/0005-async-model.md)) | [#6](https://github.com/dev-rb-hub/a2a-control-plane/issues/6) | planned |
 | Transports | gRPC + mTLS ([#6](https://github.com/dev-rb-hub/a2a-control-plane/issues/6)), NATS ([#7](https://github.com/dev-rb-hub/a2a-control-plane/issues/7)) | planned |
 | A2A gateway, multi-turn tasks | [#8](https://github.com/dev-rb-hub/a2a-control-plane/issues/8), [#9](https://github.com/dev-rb-hub/a2a-control-plane/issues/9) | planned |
 | CrewAI integration | `integrations/crewai` (extra `crewai`) | scaffold only, methods raise `NotImplementedError` |

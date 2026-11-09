@@ -22,7 +22,7 @@ from a2a_control_plane._proto.submission_pb2 import (
     GetTaskStatusResponse,
     SignedTaskVoucher,
 )
-from a2a_control_plane.bus import MAX_MESSAGE_BYTES, TYPE_HEADER, InMemoryBus, Message, Session
+from a2a_control_plane.bus import MAX_MESSAGE_BYTES, TYPE_HEADER, Bus, Message, Session
 from a2a_control_plane.control import (
     CONTROL_TYPE,
     cancel_message,
@@ -139,7 +139,7 @@ class Aggregator:
     def __init__(
         self,
         identity: SpiffeId,
-        bus: InMemoryBus,
+        bus: Bus,
         registry: Registry,
         clock: Callable[[], float] = time.monotonic,
         *,
