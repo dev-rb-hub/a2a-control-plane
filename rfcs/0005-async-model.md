@@ -1,6 +1,6 @@
-# RFC 0005 (proposed): Concurrency model for the SDK roles and transports
+# RFC 0005 (accepted): Concurrency model for the SDK roles and transports
 
-Issue [#5](https://github.com/dev-rb-hub/a2a-control-plane/issues/5). Blocks #6 (gRPC), #7 (NATS). Wire impact: none. Spec impact: one informative note. Status: proposed; discussion is on #5.
+Issue [#5](https://github.com/dev-rb-hub/a2a-control-plane/issues/5). Blocks #6 (gRPC), #7 (NATS). Wire impact: none. Spec impact: one informative note. Status: accepted by the Maintainer on 2026-11-09 (option 1); rationale recorded on #5. Not a normative change, so the 14-day window of GOVERNANCE.md does not apply. The open benchmarks in section 2 remain follow-up work and do not reopen the decision unless they contradict it.
 
 The benchmark harness used for the measurements in section 2 is not in the repository yet (see the work plan, step 5).
 
@@ -75,10 +75,10 @@ Why not A: rewrites tested logic and loses deterministic tests for a benefit the
 
 Protocol compliance: no wire change. One informative note in spec 05: per-session messages are processed in order (the sequence rules already assume it) and a Worker's state transitions are atomic; everything else implementation-defined.
 
-Risks: single-loop CPU ceiling (scale by instances; re-measure with real protobuf traffic); accidental loop blocking (CI slow-callback test plus lint); gap between synchronous in-memory delivery and queued delivery (conformance suite #3 runs roles against both; audit reentrancy points); the unexplained sync-vs-aio throughput gap (put on the benchmark list before the decision is final).
+Risks: single-loop CPU ceiling (scale by instances; re-measure with real protobuf traffic); accidental loop blocking (CI slow-callback test plus lint); gap between synchronous in-memory delivery and queued delivery (conformance suite #3 runs roles against both; audit reentrancy points); the unexplained sync-vs-aio throughput gap (on the benchmark list, step 5).
 
 ## 7. Work plan
-1. Decision on #5 (14-day discussion window if treated as a spec change, per GOVERNANCE.md).
+1. Decision on #5: done, option 1 accepted.
 2. Bus/Session protocols and conformance suite (#3).
 3. Runtime: loop owner, executor offload, sync facade, tests on a real loop.
 4. grpc.aio transport (#6), then NATS (#7).
