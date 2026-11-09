@@ -11,7 +11,7 @@ An open standard for zero-trust, low-noise agent control planes, plus a referenc
 - Three roles: **Registry** (admission, authoritative records), **Aggregator** (one per zone; the only path for workers), **Worker**. Workers never talk to each other or to the registry.
 - Traffic is subjects on a regional bus (`a2a.zone.<zone>.agent.<agent>.{tasks,state,results,control}` and `a2a.zone.<zone>.aggregator.state`). Authorization is derived only from the SPIFFE ID of the session (`subjects.may_publish` / `may_subscribe`).
 - State is sent as deltas and adaptive heartbeats; the aggregator coalesces and reports to the registry.
-- SDK layers: core (pure logic) -> roles (`registry`, `aggregator`, `worker`) over `bus.InMemoryBus` -> `dev` (simulation) -> `bridge` (optional `a2a-sdk` integration).
+- SDK layers: core (pure logic) -> roles (`registry`, `aggregator`, `worker`) over the `bus.Bus`/`bus.Session` protocols (reference transport `bus.InMemoryBus`; every transport must pass `tests/test_bus_conformance.py`) -> `dev` (simulation) -> `bridge` (optional `a2a-sdk` integration).
 
 ## Rules
 

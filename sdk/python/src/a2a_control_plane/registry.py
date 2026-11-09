@@ -29,7 +29,7 @@ from a2a_control_plane._proto.registration_pb2 import (
     RegistrationChallenge,
 )
 from a2a_control_plane._proto.submission_pb2 import IssueTaskVoucherResponse
-from a2a_control_plane.bus import MAX_MESSAGE_BYTES, InMemoryBus, Message
+from a2a_control_plane.bus import MAX_MESSAGE_BYTES, Bus, Message
 from a2a_control_plane.delta import (
     AgentStateView,
     CapabilityPolicy,
@@ -163,7 +163,7 @@ class Registry:
         public_key_lookup: PublicKeyLookup,
         clock: Callable[[], float] = time.monotonic,
         challenge_timeout: float = 10.0,
-        bus: InMemoryBus | None = None,
+        bus: Bus | None = None,
         *,
         allowed_zones: Iterable[str] | None = None,
         capability_policy: CapabilityAdmission | None = None,

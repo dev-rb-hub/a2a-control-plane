@@ -2,12 +2,12 @@
 
 Layers:
     core   - tokens, identity, subjects, state, heartbeat, delta (pure logic, no I/O)
-    roles  - Registry, Aggregator, WorkerClient over an in-memory bus (bus, registry, ...)
+    roles  - Registry, Aggregator, WorkerClient over any ``Bus`` (in-memory reference: InMemoryBus)
     dev    - DevCA, ManualClock, DevCluster for local simulation and tests
 """
 
 from a2a_control_plane.aggregator import Aggregator
-from a2a_control_plane.bus import InMemoryBus, Message, Session
+from a2a_control_plane.bus import Bus, InMemoryBus, InMemorySession, Message, Session
 from a2a_control_plane.dev import DevCA, DevCluster, ManualClock
 from a2a_control_plane.heartbeat import AdaptiveHeartbeat
 from a2a_control_plane.identity import Role, SpiffeId
@@ -20,10 +20,12 @@ from a2a_control_plane.worker import WorkerClient
 __all__ = [
     "AdaptiveHeartbeat",
     "Aggregator",
+    "Bus",
     "Channel",
     "DevCA",
     "DevCluster",
     "InMemoryBus",
+    "InMemorySession",
     "ManualClock",
     "Message",
     "Registry",
