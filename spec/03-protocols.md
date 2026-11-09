@@ -1,6 +1,6 @@
 # a2a-control-plane Specification 03: Protocols
 
-**Status:** Draft v0.1.0  
+**Status:** Release candidate v1.0.0-rc.1  
 **Scope:** Wire format, transport, delta-state streaming, and adaptive heartbeats.
 
 ## 1. Conventions
@@ -79,7 +79,7 @@ Tasks and results use the messages in [`schemas/v1/task.proto`](../schemas/v1/ta
 
 ### 7.1 Dispatch
 
-- An Aggregator MUST publish a `Task` only on the `tasks` subject of a Worker in its own zone that is eligible. A Worker is eligible when it is `Idle` or `Executing` (see [02-topology](02-topology.md) Section 5.3), holds fewer than the maximum number of in-flight tasks ([05-operations](05-operations.md) Section 5), and advertises every entry of `required_capabilities` with exactly the required value.
+- An Aggregator MUST publish a `Task` only on the `tasks` subject of a Worker in its own zone that is eligible. A Worker is eligible when it is `Idle` or `Executing` (see [02-topology](02-topology.md) Section 5.3), is not draining (Section 8), holds fewer than the maximum number of in-flight tasks ([05-operations](05-operations.md) Section 5), and advertises every entry of `required_capabilities` with exactly the required value.
 - The Aggregator MUST select the Worker for a task using only `required_capabilities`, the Worker's state and its load. Among eligible Workers the choice is implementation defined; the Aggregator SHOULD prefer the one with the fewest in-flight tasks.
 - If no Worker is eligible, the Aggregator MUST NOT dispatch the task. For a task submitted by a client the outcome is `TASK_STATUS_REJECTED` with error code `no_eligible_worker` ([04-control-api](04-control-api.md) Section 4.6).
 - `task_id` MUST satisfy the token grammar of [02-topology](02-topology.md) Section 6.1. For a task submitted by a client the CCR assigns it, and it is unique by construction ([04-control-api](04-control-api.md) Section 4.1). An Aggregator MUST NOT dispatch a `task_id` that is already in flight.
@@ -129,7 +129,17 @@ Commands to a Worker use `ControlMessage` ([`schemas/v1/control.proto`](../schem
 - `CancelTask`: see Section 7.4.
 - `ResyncRequest`: the Aggregator sends it when it detects a gap in a Worker's sequence numbers. The Worker MUST answer with a snapshot as its next state message ([05-operations](05-operations.md) Section 2.2).
 - `HeartbeatConfig`: a zero field means that parameter is unchanged. A Worker MUST ignore the message if the resulting `base_interval` would exceed `max_interval`, or if `miss_multiplier` would be below 1. The Worker applies the new values from its next message. The Aggregator MUST apply the same values to its own liveness tracking when it sends the message.
-- The commands `drain` and `shutdown` listed in earlier drafts are not defined in this version.
+- `Drain`: ends a Worker's session once the tasks it holds are done. See below.
+- The `shutdown` command listed in earlier drafts is not defined in this version.
+
+**Drain.** An Aggregator MAY drain a Worker, for example before a planned shutdown of the instance or to move Workers to another instance.
+
+- Before it sends `Drain`, the Aggregator MUST mark the Worker as draining. A draining Worker is not eligible (Section 7.1), and the mark lasts until the session ends.
+- Draining adds no Worker state. The Worker stays `Idle`, `Executing` or `Degraded`, and its transitions and reports to the CCR are unchanged ([02-topology](02-topology.md) Section 5).
+- The Aggregator MUST set `timeout_ms` to the drain timeout it applies ([05-operations](05-operations.md) Section 1.1). It MUST keep processing results for the Worker's tasks in flight as in Section 7.2.
+- When the Worker holds no task in flight, or when the drain timeout expires, the Aggregator MUST end the session (T10 in [02-topology](02-topology.md)). Tasks still in flight at the timeout are reassigned or failed as in T10.
+- A Worker that receives `Drain` MUST keep running the tasks it holds and MUST publish their results. It MUST process a `Task` that arrives after `Drain`, because the Aggregator dispatched it before the drain. It MAY use `Drain` to prepare for the end of its session. When the session ends it reconnects as in [05-operations](05-operations.md) Section 6; a Worker that should stop is stopped by its operator.
+- A Worker that wants to stop receiving tasks, for example before it shuts down, MAY report `cp.health` `fault` (T7 in [02-topology](02-topology.md)), finish its tasks and then close its connection.
 
 ## 9. Zone State Reports
 

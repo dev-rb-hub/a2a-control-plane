@@ -62,6 +62,18 @@ def test_identity_loss_ignored_when_not_registered() -> None:
         assert next_state(state, E.IDENTITY_LOST) is None
 
 
+@pytest.mark.parametrize("state", [S.IDLE, S.EXECUTING, S.DEGRADED])
+def test_drain_ends_a_serving_session(state: WorkerState) -> None:
+    m = WorkerStateMachine(state)
+    run(m, E.DRAINED)
+    assert m.state is S.UNREGISTERED
+
+
+def test_drain_needs_a_serving_session() -> None:
+    for state in (S.UNREGISTERED, S.CHALLENGED, S.REGISTERED):
+        assert next_state(state, E.DRAINED) is None
+
+
 def test_unlisted_transitions_are_ignored(caplog: pytest.LogCaptureFixture) -> None:
     m = WorkerStateMachine(S.UNREGISTERED)
     assert not m.apply(E.TASK_ACCEPTED)
@@ -71,8 +83,8 @@ def test_unlisted_transitions_are_ignored(caplog: pytest.LogCaptureFixture) -> N
 
 def test_only_the_ten_spec_transitions_exist() -> None:
     valid = [(s, e) for s, e in itertools.product(S, E) if next_state(s, e) is not None]
-    # T1-T6, T7 (x2), T8, T9, T10 (x4), T11
-    assert len(valid) == 15
+    # T1-T6, T7 (x2), T8, T9, T10 (x4 identity loss, x3 drain), T11
+    assert len(valid) == 18
 
 
 def test_tasks_only_in_idle_or_executing() -> None:

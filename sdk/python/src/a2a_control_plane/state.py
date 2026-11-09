@@ -28,6 +28,7 @@ class WorkerEvent(StrEnum):
     RECOVERED = "recovered"  # T8
     GRACE_EXPIRED = "grace_expired"  # T9
     IDENTITY_LOST = "identity_lost"  # T10 (revoked or SVID expired)
+    DRAINED = "drained"  # T10 (drain ended; spec 03, section 8)
     REGISTRATION_TIMEOUT = "registration_timeout"  # T11 (no initial snapshot after admission)
 
 
@@ -50,6 +51,9 @@ _TRANSITIONS: dict[tuple[WorkerState, WorkerEvent], WorkerState] = {
     (S.IDLE, E.IDENTITY_LOST): S.UNREGISTERED,
     (S.EXECUTING, E.IDENTITY_LOST): S.UNREGISTERED,
     (S.DEGRADED, E.IDENTITY_LOST): S.UNREGISTERED,
+    (S.IDLE, E.DRAINED): S.UNREGISTERED,
+    (S.EXECUTING, E.DRAINED): S.UNREGISTERED,
+    (S.DEGRADED, E.DRAINED): S.UNREGISTERED,
 }
 
 

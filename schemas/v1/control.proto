@@ -17,7 +17,20 @@ message ControlMessage {
     CancelTask cancel_task = 1;
     HeartbeatConfig heartbeat_config = 2;
     ResyncRequest resync = 3;
+    Drain drain = 4;
   }
+}
+
+// Tells the Worker that its session will end once the tasks it holds are done
+// (spec/03-protocols.md, section 8). The Aggregator has already stopped dispatching to the
+// Worker when it sends this message.
+message Drain {
+  // Milliseconds after which the Aggregator ends the session even if tasks remain. The
+  // Aggregator always sets it.
+  uint32 timeout_ms = 1;
+
+  // Human-readable detail. MUST NOT contain secrets.
+  string reason = 2;
 }
 
 // Asks the Worker to send a snapshot (AgentStateDelta with snapshot set and the complete

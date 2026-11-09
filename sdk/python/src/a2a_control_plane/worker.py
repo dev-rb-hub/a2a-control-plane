@@ -44,6 +44,7 @@ DELTA_TYPE = "a2a.controlplane.v1.AgentStateDelta"
 # Return a result to finish immediately, or None to finish later with ``WorkerClient.complete``.
 TaskHandler = Callable[[Task], TaskResult | None]
 CancelHandler = Callable[[str], None]  # (task_id)
+DrainHandler = Callable[[float, str], None]  # (timeout in seconds, reason)
 
 
 class Credential(Protocol):
@@ -81,6 +82,8 @@ class WorkerClient:
         self._capabilities: dict[str, str] = {}
         self._handler: TaskHandler | None = None
         self._cancel_handler: CancelHandler | None = None
+        self._drain_handler: DrainHandler | None = None
+        self.draining = False  # the Aggregator sent Drain on the current session
         self._active: dict[str, Task] = {}
         self._last_timestamp_ns = 0
         self._sequence = 0
@@ -102,6 +105,14 @@ class WorkerClient:
     def on_cancel(self, handler: CancelHandler) -> None:
         """Called when an active task is cancelled, so the application can stop its work."""
         self._cancel_handler = handler
+
+    def on_drain(self, handler: DrainHandler) -> None:
+        """Called when the Aggregator drains this Worker (spec 03, section 8).
+
+        Tasks already held keep running and their results are still sent. The session ends
+        when they are done or the timeout expires.
+        """
+        self._drain_handler = handler
 
     def complete(self, task_id: str, result: TaskResult) -> None:
         """Finish a task whose handler returned None. Ignored if it was cancelled meanwhile."""
@@ -153,6 +164,7 @@ class WorkerClient:
         self.selected_version = admission.selected_version
         self.selected_features = tuple(admission.selected_features)
         self._sequence = 0
+        self.draining = False
         session.subscribe(
             agent_subject(self._zone_id, self._agent_id, Channel.TASKS), self._on_task
         )
@@ -284,6 +296,10 @@ class WorkerClient:
                 )
             case "resync":
                 self._send_snapshot(self._capabilities)  # spec 05, section 2.2
+            case "drain":
+                self.draining = True  # tasks that still arrive were dispatched before the drain
+                if self._drain_handler is not None:
+                    self._drain_handler(control.drain.timeout_ms / 1000, control.drain.reason)
             case _:
                 pass  # unknown commands are ignored (spec 03, section 8)
 

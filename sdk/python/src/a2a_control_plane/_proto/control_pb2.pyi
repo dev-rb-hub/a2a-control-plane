@@ -6,14 +6,24 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class ControlMessage(_message.Message):
-    __slots__ = ("cancel_task", "heartbeat_config", "resync")
+    __slots__ = ("cancel_task", "heartbeat_config", "resync", "drain")
     CANCEL_TASK_FIELD_NUMBER: _ClassVar[int]
     HEARTBEAT_CONFIG_FIELD_NUMBER: _ClassVar[int]
     RESYNC_FIELD_NUMBER: _ClassVar[int]
+    DRAIN_FIELD_NUMBER: _ClassVar[int]
     cancel_task: CancelTask
     heartbeat_config: HeartbeatConfig
     resync: ResyncRequest
-    def __init__(self, cancel_task: _Optional[_Union[CancelTask, _Mapping]] = ..., heartbeat_config: _Optional[_Union[HeartbeatConfig, _Mapping]] = ..., resync: _Optional[_Union[ResyncRequest, _Mapping]] = ...) -> None: ...
+    drain: Drain
+    def __init__(self, cancel_task: _Optional[_Union[CancelTask, _Mapping]] = ..., heartbeat_config: _Optional[_Union[HeartbeatConfig, _Mapping]] = ..., resync: _Optional[_Union[ResyncRequest, _Mapping]] = ..., drain: _Optional[_Union[Drain, _Mapping]] = ...) -> None: ...
+
+class Drain(_message.Message):
+    __slots__ = ("timeout_ms", "reason")
+    TIMEOUT_MS_FIELD_NUMBER: _ClassVar[int]
+    REASON_FIELD_NUMBER: _ClassVar[int]
+    timeout_ms: int
+    reason: str
+    def __init__(self, timeout_ms: _Optional[int] = ..., reason: _Optional[str] = ...) -> None: ...
 
 class ResyncRequest(_message.Message):
     __slots__ = ("last_applied_sequence",)

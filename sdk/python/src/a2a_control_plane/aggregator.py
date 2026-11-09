@@ -26,6 +26,7 @@ from a2a_control_plane.bus import MAX_MESSAGE_BYTES, TYPE_HEADER, InMemoryBus, M
 from a2a_control_plane.control import (
     CONTROL_TYPE,
     cancel_message,
+    drain_message,
     heartbeat_config_message,
     resync_message,
 )
@@ -78,6 +79,7 @@ from a2a_control_plane.voucher import open_voucher
 _KNOWN_STATUSES = frozenset(
     {TASK_STATUS_SUCCEEDED, TASK_STATUS_FAILED, TASK_STATUS_REJECTED, TASK_STATUS_CANCELLED}
 )
+_SERVING = frozenset({WorkerState.IDLE, WorkerState.EXECUTING, WorkerState.DEGRADED})
 
 ResultCallback = Callable[[str, TaskResult], None]  # (agent_id, result): terminal outcomes only
 TaskOutcome = Callable[[TaskResult], None]  # a client's call completing with the final outcome
@@ -112,6 +114,7 @@ class _Entry:
     resync_pending: bool = False
     in_flight: set[str] = field(default_factory=set)
     degraded_since: float | None = None
+    drain_deadline: float | None = None  # set while draining (spec 03, section 8)
 
 
 @dataclass(slots=True)
@@ -148,6 +151,7 @@ class Aggregator:
         coalesce_window: float = 1.0,
         max_attempts: int = 3,
         max_in_flight: int = 16,
+        drain_timeout: float = 300.0,
         max_message_bytes: int = MAX_MESSAGE_BYTES,
         endpoint: str = "",
         voucher_keys: VoucherKeys | None = None,
@@ -179,6 +183,7 @@ class Aggregator:
         self._coalesce_window = coalesce_window
         self._max_attempts = max_attempts
         self._max_in_flight = max_in_flight
+        self._drain_timeout = drain_timeout
         self._max_message_bytes = max_message_bytes
         self._voucher_keys = voucher_keys
         self._voucher_skew_ns = round(voucher_skew * 1_000_000_000)
@@ -372,8 +377,10 @@ class Aggregator:
             self._note_state(entry)
 
         if self._should_retry(flight, result) and self._reassign(flight, agent_id):
+            self._end_drain_if_done(entry)
             return
         self._finish(agent_id, flight, result)
+        self._end_drain_if_done(entry)
 
     def _finish(self, agent_id: str, flight: _Flight, result: TaskResult) -> None:
         if self.on_result is not None:
@@ -531,6 +538,38 @@ class Aggregator:
         self._publish_control(agent_id, message.SerializeToString())
         return True
 
+    def drain(self, agent_id: str, reason: str = "", timeout: float | None = None) -> bool:
+        """Stop dispatching to a Worker and end its session once its tasks are done.
+
+        The session ends when the Worker holds no task in flight or after ``timeout`` seconds
+        (default: the drain timeout), whichever comes first (spec 03, section 8). Returns False
+        if the Worker is unknown, not yet serving tasks, or already draining.
+        """
+        entry = self._workers.get(agent_id)
+        if entry is None or entry.drain_deadline is not None:
+            return False
+        if entry.machine.state not in _SERVING:
+            return False
+        effective = self._drain_timeout if timeout is None else timeout
+        entry.drain_deadline = self._clock() + effective  # ineligible from now on
+        self._publish_control(agent_id, drain_message(effective, reason).SerializeToString())
+        self._end_drain_if_done(entry)
+        return True
+
+    def is_draining(self, agent_id: str) -> bool:
+        entry = self._workers.get(agent_id)
+        return entry is not None and entry.drain_deadline is not None
+
+    def _end_drain_if_done(self, entry: _Entry) -> None:
+        agent_id = entry.identity.agent_id
+        if (
+            entry.drain_deadline is not None
+            and not entry.in_flight
+            and agent_id is not None
+            and self._workers.get(agent_id) is entry
+        ):
+            self._drop(entry, WorkerEvent.DRAINED)  # T10
+
     def _should_retry(self, flight: _Flight, result: TaskResult) -> bool:
         return (
             not flight.cancel_requested
@@ -567,6 +606,7 @@ class Aggregator:
     def _eligible(self, entry: _Entry, task: Task) -> bool:
         return (
             entry.machine.can_receive_tasks
+            and entry.drain_deadline is None
             and len(entry.in_flight) < self._max_in_flight
             and capabilities_match(task.required_capabilities, entry.view.capabilities)
         )
@@ -620,6 +660,9 @@ class Aggregator:
     def tick(self) -> None:
         now = self._clock()
         for agent_id, entry in list(self._workers.items()):
+            if entry.drain_deadline is not None and now >= entry.drain_deadline:
+                self._drop(entry, WorkerEvent.DRAINED)  # T10: drain timeout
+                continue
             state = entry.machine.state
             if state is WorkerState.CHALLENGED:
                 if now - entry.since > self._registry.challenge_timeout:

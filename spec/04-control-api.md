@@ -1,6 +1,6 @@
 # a2a-control-plane Specification 04: Control API
 
-**Status:** Draft v0.1.0  
+**Status:** Release candidate v1.0.0-rc.1  
 **Scope:** Worker admission, Aggregator attachment, task origination by voucher, administration, version and feature negotiation, and the error model.
 
 ## 1. Conventions

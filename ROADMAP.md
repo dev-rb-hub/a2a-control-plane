@@ -20,7 +20,7 @@ It is the infrastructure layer *underneath* agent-to-agent application protocols
 
 ## Where it stands
 
-- Specification drafts 01-06 (identity, topology, protocols, control API, operations, threat model), wire schemas for state, tasks, control, zone reports, registration, submission and administration plus the gRPC service definitions, and a Kubernetes NetworkPolicy reference.
+- Specification 1.0.0-rc.1 (identity, topology, protocols, control API, operations, threat model; see [CHANGELOG.md](CHANGELOG.md)), wire schemas for state, tasks, control, zone reports, registration, submission and administration plus the gRPC service definitions, and a Kubernetes NetworkPolicy reference.
 - Python SDK: the full protocol runs in-process (registry, aggregators, workers, ACLs, registration relay and negotiation, snapshot recovery, task vouchers and selection, reassignment, cancellation, fencing) with 313 tests and CI. See [sdk/python/README.md](sdk/python/README.md).
 - An `a2a-sdk` bridge runs A2A agents as workers. A CrewAI integration exists only as a scaffold.
 - Nothing runs over a real network yet. That is the main gap between "specified and simulated" and "usable".
