@@ -17,6 +17,8 @@ This document describes how the a2a-control-plane specification is changed.
 4. **Review**: every pull request MUST be approved by a code owner listed in [`.github/CODEOWNERS`](.github/CODEOWNERS) before merge. The `main` branch is protected: direct pushes and force pushes are not allowed.
 5. **Merge**: approved changes are merged and recorded in the changelog of the affected document.
 
+Design decisions that do not change `spec/` or `schemas/` (for example SDK architecture) MAY be recorded as numbered documents in [`rfcs/`](rfcs/). Each states its status (proposed, accepted, rejected or superseded) and links the issue where it was decided. They are not normative and do not need the 14-day discussion window.
+
 ## Compatibility Rules
 
 - Schemas under `schemas/v<N>/` MUST remain backward compatible. Fields MUST NOT be renumbered or have their type changed; removed fields MUST be `reserved`.
