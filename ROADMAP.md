@@ -32,12 +32,15 @@ Tracked as GitHub milestones; each issue names the files to change and what done
 
 | Milestone | Outcome | Issues |
 |-----------|---------|--------|
-| **M1 Wire-complete** | Every message the protocol needs has a schema and spec text, enforced by CI | [#2](https://github.com/dev-rb-hub/a2a-control-plane/issues/2) (done in PR #20), [#10](https://github.com/dev-rb-hub/a2a-control-plane/issues/10), [#11](https://github.com/dev-rb-hub/a2a-control-plane/issues/11), [#12](https://github.com/dev-rb-hub/a2a-control-plane/issues/12) |
-| **M2 Real transports** | The same behavior over gRPC with mTLS and over NATS | [#3](https://github.com/dev-rb-hub/a2a-control-plane/issues/3), [#4](https://github.com/dev-rb-hub/a2a-control-plane/issues/4), [#5](https://github.com/dev-rb-hub/a2a-control-plane/issues/5), [#6](https://github.com/dev-rb-hub/a2a-control-plane/issues/6), [#7](https://github.com/dev-rb-hub/a2a-control-plane/issues/7) |
+| **M1 Spec 1.0-rc** | Spec freeze: schema CI enforced, Drain defined, docs tagged `1.0.0-rc.1` with a changelog. After the tag only fixes found by implementers are merged | [#11](https://github.com/dev-rb-hub/a2a-control-plane/issues/11), [#12](https://github.com/dev-rb-hub/a2a-control-plane/issues/12) |
+| **M2 Spec 1.0 (transports and interop)** | Every normative transport hop runs over a real network in at least one SDK, and the Worker-Aggregator gRPC hop interoperates between the Python and Rust SDKs in CI. Gates the `1.0.0` tag | [#3](https://github.com/dev-rb-hub/a2a-control-plane/issues/3), [#4](https://github.com/dev-rb-hub/a2a-control-plane/issues/4), [#6](https://github.com/dev-rb-hub/a2a-control-plane/issues/6), [#7](https://github.com/dev-rb-hub/a2a-control-plane/issues/7), [#14](https://github.com/dev-rb-hub/a2a-control-plane/issues/14) |
 | **M3 Ecosystem adoption** | Existing agent stacks join without rewrites | [#8](https://github.com/dev-rb-hub/a2a-control-plane/issues/8), [#9](https://github.com/dev-rb-hub/a2a-control-plane/issues/9), [#16](https://github.com/dev-rb-hub/a2a-control-plane/issues/16) |
-| **M4 Production readiness** | Outside users can deploy and extend it | [#13](https://github.com/dev-rb-hub/a2a-control-plane/issues/13), [#14](https://github.com/dev-rb-hub/a2a-control-plane/issues/14), [#15](https://github.com/dev-rb-hub/a2a-control-plane/issues/15) |
+| **M4 Production readiness** | Outside users can deploy and extend it | [#13](https://github.com/dev-rb-hub/a2a-control-plane/issues/13), [#15](https://github.com/dev-rb-hub/a2a-control-plane/issues/15) |
+| **Spec 1.1** | Additive (MINOR) spec work deferred past 1.0 | [#22](https://github.com/dev-rb-hub/a2a-control-plane/issues/22), [#25](https://github.com/dev-rb-hub/a2a-control-plane/issues/25), [#27](https://github.com/dev-rb-hub/a2a-control-plane/issues/27), [#28](https://github.com/dev-rb-hub/a2a-control-plane/issues/28), [#29](https://github.com/dev-rb-hub/a2a-control-plane/issues/29) |
 
-Dependency order: M1 and the M2 groundwork (#3, #4, #5) can proceed in parallel; the transports (#6, #7) need all of them. M3 items only need the in-memory bus, so they can start at any time.
+Dependency order: M1 and the M2 groundwork (#3, #4, and the Rust core crate in #14) can proceed in parallel; the transports (#6, #7) and the interop job need them. The async model is decided ([RFC 0005](rfcs/0005-async-model.md)). M3 items only need the in-memory bus, so they can start at any time. Queueing (#10) is SDK-only: the spec already rejects by default and allows queueing.
+
+Release plan: `spec-v1.0.0-rc.1` when M1 closes; `spec-v1.0.0` when M2 closes. The Rust crate (`0.x`) and the Python SDK on PyPI (#15) are published as betas once the interop job passes.
 
 ### Near-term engineering
 
@@ -80,8 +83,8 @@ Coverage per category will come from the traceability matrix ([#25](https://gith
 |----------|----------------|-------|
 | Async model for the roles | Decided: sync core without I/O, single-owner event loop, `grpc.aio` at the edge ([RFC 0005](rfcs/0005-async-model.md), accepted). Unblocks the transports. Benchmarks beyond 1,000 streams are still follow-up work | [#5](https://github.com/dev-rb-hub/a2a-control-plane/issues/5) |
 | License and copyright holder | Decided: Apache-2.0 for code, schemas and reference, CC BY 4.0 for `spec/` (previously MIT), copyright Rendu Barkhuizen, with `NOTICE`, `TRADEMARKS.md` and DCO sign-off in `CONTRIBUTING.md`. Still open: IP lawyer review, a DCO bot, and a standard CLA if the project ever moves off these licences | `LICENSE`, `NOTICE`, `TRADEMARKS.md` |
-| Relationship to the Linux Foundation A2A project | The README states independence. Whether to propose this as a complement or contribute upstream is a strategic call | README note |
-| Governance with a single maintainer | `GOVERNANCE.md` names one maintainer and requires code-owner approval. Adding co-maintainers changes the review rules | `GOVERNANCE.md`, `.github/CODEOWNERS` |
+| Relationship to the Linux Foundation A2A project, and the project name | The README states independence. Whether to propose this as a complement or contribute upstream is a strategic call. Open, to be decided before the public 1.0 announcement: the "a2a" name next to an existing LF project is hard to change after release, as are the package names | README note, `TRADEMARKS.md` |
+| Governance with a single maintainer | Decided: while there is a single Maintainer, they may merge their own pull requests once CI passes (`GOVERNANCE.md`, Review). Appointing an Editor restores two-person review | `GOVERNANCE.md`, `.github/CODEOWNERS` |
 | PyPI name and first release | Publishing is hard to undo | [#15](https://github.com/dev-rb-hub/a2a-control-plane/issues/15) |
 
 ## Non-goals
