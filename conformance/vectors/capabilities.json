@@ -1,0 +1,383 @@
+{
+  "diff": [
+    {
+      "changed": {
+        "a": "1"
+      },
+      "new": {
+        "a": "1"
+      },
+      "old": {}
+    },
+    {
+      "changed": {},
+      "new": {
+        "a": "1"
+      },
+      "old": {
+        "a": "1"
+      }
+    },
+    {
+      "changed": {
+        "a": "9",
+        "b": "",
+        "c": "3"
+      },
+      "new": {
+        "a": "9",
+        "c": "3"
+      },
+      "old": {
+        "a": "1",
+        "b": "2"
+      }
+    },
+    {
+      "changed": {
+        "a": ""
+      },
+      "new": {},
+      "old": {
+        "a": "1"
+      }
+    },
+    {
+      "invalid": true,
+      "new": {
+        "a": ""
+      },
+      "old": {
+        "a": "1"
+      }
+    }
+  ],
+  "match": [
+    {
+      "advertised": {},
+      "matches": true,
+      "required": {}
+    },
+    {
+      "advertised": {
+        "a": "1"
+      },
+      "matches": true,
+      "required": {}
+    },
+    {
+      "advertised": {
+        "a": "1",
+        "b": "2"
+      },
+      "matches": true,
+      "required": {
+        "a": "1"
+      }
+    },
+    {
+      "advertised": {
+        "a": "2"
+      },
+      "matches": false,
+      "required": {
+        "a": "1"
+      }
+    },
+    {
+      "advertised": {},
+      "matches": false,
+      "required": {
+        "a": "1"
+      }
+    },
+    {
+      "advertised": {
+        "a": "1"
+      },
+      "matches": false,
+      "required": {
+        "a": "1",
+        "b": "2"
+      }
+    }
+  ],
+  "validate": [
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "skill": "x"
+      },
+      "valid": true
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "a.b-c_D9": "v"
+      },
+      "valid": true
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk": "v"
+      },
+      "valid": true
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk": "v"
+      },
+      "valid": false
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "": "v"
+      },
+      "valid": false
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "bad key": "v"
+      },
+      "valid": false
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "skill": "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
+      },
+      "valid": true
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "skill": "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
+      },
+      "valid": false
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "skill": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+      },
+      "valid": true
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "skill": "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+      },
+      "valid": false
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "skill": ""
+      },
+      "valid": false
+    },
+    {
+      "allow_removal": true,
+      "capabilities": {
+        "skill": ""
+      },
+      "valid": true
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "cp.health": "ok"
+      },
+      "valid": true
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "cp.health": "fault"
+      },
+      "valid": true
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "cp.health": "degraded"
+      },
+      "valid": false
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "cp.health": ""
+      },
+      "valid": false
+    },
+    {
+      "allow_removal": true,
+      "capabilities": {
+        "cp.health": ""
+      },
+      "valid": true
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "cp.other": "x"
+      },
+      "valid": false
+    },
+    {
+      "allow_removal": true,
+      "capabilities": {
+        "cp.other": ""
+      },
+      "valid": false
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "k0": "v",
+        "k1": "v",
+        "k10": "v",
+        "k11": "v",
+        "k12": "v",
+        "k13": "v",
+        "k14": "v",
+        "k15": "v",
+        "k16": "v",
+        "k17": "v",
+        "k18": "v",
+        "k19": "v",
+        "k2": "v",
+        "k20": "v",
+        "k21": "v",
+        "k22": "v",
+        "k23": "v",
+        "k24": "v",
+        "k25": "v",
+        "k26": "v",
+        "k27": "v",
+        "k28": "v",
+        "k29": "v",
+        "k3": "v",
+        "k30": "v",
+        "k31": "v",
+        "k32": "v",
+        "k33": "v",
+        "k34": "v",
+        "k35": "v",
+        "k36": "v",
+        "k37": "v",
+        "k38": "v",
+        "k39": "v",
+        "k4": "v",
+        "k40": "v",
+        "k41": "v",
+        "k42": "v",
+        "k43": "v",
+        "k44": "v",
+        "k45": "v",
+        "k46": "v",
+        "k47": "v",
+        "k48": "v",
+        "k49": "v",
+        "k5": "v",
+        "k50": "v",
+        "k51": "v",
+        "k52": "v",
+        "k53": "v",
+        "k54": "v",
+        "k55": "v",
+        "k56": "v",
+        "k57": "v",
+        "k58": "v",
+        "k59": "v",
+        "k6": "v",
+        "k60": "v",
+        "k61": "v",
+        "k62": "v",
+        "k63": "v",
+        "k7": "v",
+        "k8": "v",
+        "k9": "v"
+      },
+      "valid": true
+    },
+    {
+      "allow_removal": false,
+      "capabilities": {
+        "k0": "v",
+        "k1": "v",
+        "k10": "v",
+        "k11": "v",
+        "k12": "v",
+        "k13": "v",
+        "k14": "v",
+        "k15": "v",
+        "k16": "v",
+        "k17": "v",
+        "k18": "v",
+        "k19": "v",
+        "k2": "v",
+        "k20": "v",
+        "k21": "v",
+        "k22": "v",
+        "k23": "v",
+        "k24": "v",
+        "k25": "v",
+        "k26": "v",
+        "k27": "v",
+        "k28": "v",
+        "k29": "v",
+        "k3": "v",
+        "k30": "v",
+        "k31": "v",
+        "k32": "v",
+        "k33": "v",
+        "k34": "v",
+        "k35": "v",
+        "k36": "v",
+        "k37": "v",
+        "k38": "v",
+        "k39": "v",
+        "k4": "v",
+        "k40": "v",
+        "k41": "v",
+        "k42": "v",
+        "k43": "v",
+        "k44": "v",
+        "k45": "v",
+        "k46": "v",
+        "k47": "v",
+        "k48": "v",
+        "k49": "v",
+        "k5": "v",
+        "k50": "v",
+        "k51": "v",
+        "k52": "v",
+        "k53": "v",
+        "k54": "v",
+        "k55": "v",
+        "k56": "v",
+        "k57": "v",
+        "k58": "v",
+        "k59": "v",
+        "k6": "v",
+        "k60": "v",
+        "k61": "v",
+        "k62": "v",
+        "k63": "v",
+        "k64": "v",
+        "k7": "v",
+        "k8": "v",
+        "k9": "v"
+      },
+      "valid": false
+    }
+  ],
+  "vector": "capabilities",
+  "version": 1
+}

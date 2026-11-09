@@ -1,0 +1,392 @@
+{
+  "can_receive_tasks": [
+    "Idle",
+    "Executing"
+  ],
+  "cases": [
+    {
+      "event": "connect",
+      "next": "Challenged",
+      "state": "Unregistered"
+    },
+    {
+      "event": "challenge_passed",
+      "next": null,
+      "state": "Unregistered"
+    },
+    {
+      "event": "challenge_failed",
+      "next": null,
+      "state": "Unregistered"
+    },
+    {
+      "event": "initial_delta_accepted",
+      "next": null,
+      "state": "Unregistered"
+    },
+    {
+      "event": "task_accepted",
+      "next": null,
+      "state": "Unregistered"
+    },
+    {
+      "event": "tasks_completed",
+      "next": null,
+      "state": "Unregistered"
+    },
+    {
+      "event": "degrade",
+      "next": null,
+      "state": "Unregistered"
+    },
+    {
+      "event": "recovered",
+      "next": null,
+      "state": "Unregistered"
+    },
+    {
+      "event": "grace_expired",
+      "next": null,
+      "state": "Unregistered"
+    },
+    {
+      "event": "identity_lost",
+      "next": null,
+      "state": "Unregistered"
+    },
+    {
+      "event": "drained",
+      "next": null,
+      "state": "Unregistered"
+    },
+    {
+      "event": "registration_timeout",
+      "next": null,
+      "state": "Unregistered"
+    },
+    {
+      "event": "connect",
+      "next": null,
+      "state": "Challenged"
+    },
+    {
+      "event": "challenge_passed",
+      "next": "Registered",
+      "state": "Challenged"
+    },
+    {
+      "event": "challenge_failed",
+      "next": "Unregistered",
+      "state": "Challenged"
+    },
+    {
+      "event": "initial_delta_accepted",
+      "next": null,
+      "state": "Challenged"
+    },
+    {
+      "event": "task_accepted",
+      "next": null,
+      "state": "Challenged"
+    },
+    {
+      "event": "tasks_completed",
+      "next": null,
+      "state": "Challenged"
+    },
+    {
+      "event": "degrade",
+      "next": null,
+      "state": "Challenged"
+    },
+    {
+      "event": "recovered",
+      "next": null,
+      "state": "Challenged"
+    },
+    {
+      "event": "grace_expired",
+      "next": null,
+      "state": "Challenged"
+    },
+    {
+      "event": "identity_lost",
+      "next": null,
+      "state": "Challenged"
+    },
+    {
+      "event": "drained",
+      "next": null,
+      "state": "Challenged"
+    },
+    {
+      "event": "registration_timeout",
+      "next": null,
+      "state": "Challenged"
+    },
+    {
+      "event": "connect",
+      "next": null,
+      "state": "Registered"
+    },
+    {
+      "event": "challenge_passed",
+      "next": null,
+      "state": "Registered"
+    },
+    {
+      "event": "challenge_failed",
+      "next": null,
+      "state": "Registered"
+    },
+    {
+      "event": "initial_delta_accepted",
+      "next": "Idle",
+      "state": "Registered"
+    },
+    {
+      "event": "task_accepted",
+      "next": null,
+      "state": "Registered"
+    },
+    {
+      "event": "tasks_completed",
+      "next": null,
+      "state": "Registered"
+    },
+    {
+      "event": "degrade",
+      "next": null,
+      "state": "Registered"
+    },
+    {
+      "event": "recovered",
+      "next": null,
+      "state": "Registered"
+    },
+    {
+      "event": "grace_expired",
+      "next": null,
+      "state": "Registered"
+    },
+    {
+      "event": "identity_lost",
+      "next": "Unregistered",
+      "state": "Registered"
+    },
+    {
+      "event": "drained",
+      "next": null,
+      "state": "Registered"
+    },
+    {
+      "event": "registration_timeout",
+      "next": "Unregistered",
+      "state": "Registered"
+    },
+    {
+      "event": "connect",
+      "next": null,
+      "state": "Idle"
+    },
+    {
+      "event": "challenge_passed",
+      "next": null,
+      "state": "Idle"
+    },
+    {
+      "event": "challenge_failed",
+      "next": null,
+      "state": "Idle"
+    },
+    {
+      "event": "initial_delta_accepted",
+      "next": null,
+      "state": "Idle"
+    },
+    {
+      "event": "task_accepted",
+      "next": "Executing",
+      "state": "Idle"
+    },
+    {
+      "event": "tasks_completed",
+      "next": null,
+      "state": "Idle"
+    },
+    {
+      "event": "degrade",
+      "next": "Degraded",
+      "state": "Idle"
+    },
+    {
+      "event": "recovered",
+      "next": null,
+      "state": "Idle"
+    },
+    {
+      "event": "grace_expired",
+      "next": null,
+      "state": "Idle"
+    },
+    {
+      "event": "identity_lost",
+      "next": "Unregistered",
+      "state": "Idle"
+    },
+    {
+      "event": "drained",
+      "next": "Unregistered",
+      "state": "Idle"
+    },
+    {
+      "event": "registration_timeout",
+      "next": null,
+      "state": "Idle"
+    },
+    {
+      "event": "connect",
+      "next": null,
+      "state": "Executing"
+    },
+    {
+      "event": "challenge_passed",
+      "next": null,
+      "state": "Executing"
+    },
+    {
+      "event": "challenge_failed",
+      "next": null,
+      "state": "Executing"
+    },
+    {
+      "event": "initial_delta_accepted",
+      "next": null,
+      "state": "Executing"
+    },
+    {
+      "event": "task_accepted",
+      "next": null,
+      "state": "Executing"
+    },
+    {
+      "event": "tasks_completed",
+      "next": "Idle",
+      "state": "Executing"
+    },
+    {
+      "event": "degrade",
+      "next": "Degraded",
+      "state": "Executing"
+    },
+    {
+      "event": "recovered",
+      "next": null,
+      "state": "Executing"
+    },
+    {
+      "event": "grace_expired",
+      "next": null,
+      "state": "Executing"
+    },
+    {
+      "event": "identity_lost",
+      "next": "Unregistered",
+      "state": "Executing"
+    },
+    {
+      "event": "drained",
+      "next": "Unregistered",
+      "state": "Executing"
+    },
+    {
+      "event": "registration_timeout",
+      "next": null,
+      "state": "Executing"
+    },
+    {
+      "event": "connect",
+      "next": null,
+      "state": "Degraded"
+    },
+    {
+      "event": "challenge_passed",
+      "next": null,
+      "state": "Degraded"
+    },
+    {
+      "event": "challenge_failed",
+      "next": null,
+      "state": "Degraded"
+    },
+    {
+      "event": "initial_delta_accepted",
+      "next": null,
+      "state": "Degraded"
+    },
+    {
+      "event": "task_accepted",
+      "next": null,
+      "state": "Degraded"
+    },
+    {
+      "event": "tasks_completed",
+      "next": null,
+      "state": "Degraded"
+    },
+    {
+      "event": "degrade",
+      "next": null,
+      "state": "Degraded"
+    },
+    {
+      "event": "recovered",
+      "next": "Idle",
+      "state": "Degraded"
+    },
+    {
+      "event": "grace_expired",
+      "next": "Unregistered",
+      "state": "Degraded"
+    },
+    {
+      "event": "identity_lost",
+      "next": "Unregistered",
+      "state": "Degraded"
+    },
+    {
+      "event": "drained",
+      "next": "Unregistered",
+      "state": "Degraded"
+    },
+    {
+      "event": "registration_timeout",
+      "next": null,
+      "state": "Degraded"
+    }
+  ],
+  "events": [
+    "connect",
+    "challenge_passed",
+    "challenge_failed",
+    "initial_delta_accepted",
+    "task_accepted",
+    "tasks_completed",
+    "degrade",
+    "recovered",
+    "grace_expired",
+    "identity_lost",
+    "drained",
+    "registration_timeout"
+  ],
+  "states": [
+    "Unregistered",
+    "Challenged",
+    "Registered",
+    "Idle",
+    "Executing",
+    "Degraded"
+  ],
+  "vector": "state_machine",
+  "version": 1
+}

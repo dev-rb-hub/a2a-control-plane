@@ -1,0 +1,94 @@
+{
+  "cases": [
+    {
+      "attempt": 0,
+      "delay": 0.0,
+      "factor": 2.0,
+      "initial": 1.0,
+      "maximum": 60.0,
+      "rng": 0.0
+    },
+    {
+      "attempt": 0,
+      "delay": 0.5,
+      "factor": 2.0,
+      "initial": 1.0,
+      "maximum": 60.0,
+      "rng": 0.5
+    },
+    {
+      "attempt": 3,
+      "delay": 4.0,
+      "factor": 2.0,
+      "initial": 1.0,
+      "maximum": 60.0,
+      "rng": 0.5
+    },
+    {
+      "attempt": 5,
+      "delay": 31.968,
+      "factor": 2.0,
+      "initial": 1.0,
+      "maximum": 60.0,
+      "rng": 0.999
+    },
+    {
+      "attempt": 6,
+      "delay": 60.0,
+      "factor": 2.0,
+      "initial": 1.0,
+      "maximum": 60.0,
+      "rng": 1.0
+    },
+    {
+      "attempt": 10000,
+      "delay": 15.0,
+      "factor": 2.0,
+      "initial": 1.0,
+      "maximum": 60.0,
+      "rng": 0.25
+    },
+    {
+      "attempt": 2,
+      "delay": 2.0,
+      "factor": 3.0,
+      "initial": 0.5,
+      "maximum": 4.0,
+      "rng": 0.5
+    },
+    {
+      "attempt": -1,
+      "factor": 2.0,
+      "initial": 1.0,
+      "invalid": true,
+      "maximum": 60.0,
+      "rng": 0.5
+    },
+    {
+      "attempt": 0,
+      "factor": 2.0,
+      "initial": 0.0,
+      "invalid": true,
+      "maximum": 60.0,
+      "rng": 0.5
+    },
+    {
+      "attempt": 0,
+      "factor": 0.5,
+      "initial": 1.0,
+      "invalid": true,
+      "maximum": 60.0,
+      "rng": 0.5
+    },
+    {
+      "attempt": 0,
+      "factor": 2.0,
+      "initial": 2.0,
+      "invalid": true,
+      "maximum": 1.0,
+      "rng": 0.5
+    }
+  ],
+  "vector": "backoff",
+  "version": 1
+}

@@ -1,0 +1,76 @@
+{
+  "cases": [
+    {
+      "agent_id": "w1",
+      "channel": "tasks",
+      "subject": "a2a.zone.z1.agent.w1.tasks",
+      "valid": true,
+      "zone_id": "z1"
+    },
+    {
+      "agent_id": "w1",
+      "channel": "state",
+      "subject": "a2a.zone.z1.agent.w1.state",
+      "valid": true,
+      "zone_id": "z1"
+    },
+    {
+      "agent_id": "w1",
+      "channel": "results",
+      "subject": "a2a.zone.z1.agent.w1.results",
+      "valid": true,
+      "zone_id": "z1"
+    },
+    {
+      "agent_id": "w1",
+      "channel": "control",
+      "subject": "a2a.zone.z1.agent.w1.control",
+      "valid": true,
+      "zone_id": "z1"
+    },
+    {
+      "agent_id": null,
+      "channel": "state",
+      "subject": "a2a.zone.z1.aggregator.state",
+      "valid": true,
+      "zone_id": "z1"
+    },
+    {
+      "agent_id": null,
+      "channel": "tasks",
+      "subject": "a2a.zone.z1.aggregator.tasks",
+      "valid": true,
+      "zone_id": "z1"
+    },
+    {
+      "subject": "a2a.zone.z1.agent.w1.bogus",
+      "valid": false
+    },
+    {
+      "subject": "a2a.zone.z1.agent.*.state",
+      "valid": false
+    },
+    {
+      "subject": "a2a.zone.z1.agent.w1",
+      "valid": false
+    },
+    {
+      "subject": "b2b.zone.z1.agent.w1.tasks",
+      "valid": false
+    },
+    {
+      "subject": "a2a.region.z1.agent.w1.tasks",
+      "valid": false
+    },
+    {
+      "subject": "a2a.zone..agent.w1.tasks",
+      "valid": false
+    },
+    {
+      "subject": "a2a.zone.z1.agent.w1.tasks.extra",
+      "valid": false
+    }
+  ],
+  "vector": "subjects",
+  "version": 1
+}

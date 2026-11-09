@@ -28,6 +28,27 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: buf breaking --against ".git#ref=${BASE},subdir=schemas/v1"
 
+  sdk-rust:
+    name: Rust SDK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdk/rust
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: sdk/rust
+      - name: Format
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy --locked --all-targets -- -D warnings
+      - name: Test (conformance vectors)
+        run: cargo test --locked
+
   sdk-python:
     name: Python SDK (py${{ matrix.python }}, protobuf ${{ matrix.protobuf }})
     runs-on: ubuntu-latest

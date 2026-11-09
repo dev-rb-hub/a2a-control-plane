@@ -1,0 +1,86 @@
+{
+  "cases": [
+    {
+      "matches": true,
+      "pattern": "a2a.zone.z1.agent.w1.state",
+      "subject": "a2a.zone.z1.agent.w1.state"
+    },
+    {
+      "matches": true,
+      "pattern": "a2a.zone.z1.agent.*.state",
+      "subject": "a2a.zone.z1.agent.w1.state"
+    },
+    {
+      "matches": false,
+      "pattern": "a2a.zone.z1.agent.*.state",
+      "subject": "a2a.zone.z2.agent.w1.state"
+    },
+    {
+      "matches": false,
+      "pattern": "a2a.zone.z1.agent.*.state",
+      "subject": "a2a.zone.z1.agent.w1.results"
+    },
+    {
+      "matches": true,
+      "pattern": "a2a.zone.*.aggregator.state",
+      "subject": "a2a.zone.z9.aggregator.state"
+    },
+    {
+      "matches": false,
+      "pattern": "a2a.zone.*.aggregator.state",
+      "subject": "a2a.zone.z9.agent.w1.state"
+    },
+    {
+      "matches": true,
+      "pattern": "a2a.zone.>",
+      "subject": "a2a.zone.z1.agent.w1.state"
+    },
+    {
+      "matches": true,
+      "pattern": "a2a.zone.>",
+      "subject": "a2a.zone.z1"
+    },
+    {
+      "matches": false,
+      "pattern": "a2a.zone.>",
+      "subject": "a2a.zone"
+    },
+    {
+      "matches": true,
+      "pattern": "a2a.>",
+      "subject": "a2a.zone.z1.aggregator.state"
+    },
+    {
+      "matches": true,
+      "pattern": "*.zone.z1.aggregator.state",
+      "subject": "a2a.zone.z1.aggregator.state"
+    },
+    {
+      "matches": false,
+      "pattern": "a2a.zone.z1.agent.w1.state",
+      "subject": "a2a.zone.z1.agent.w1"
+    },
+    {
+      "matches": false,
+      "pattern": "a2a.zone.z1.agent.w1",
+      "subject": "a2a.zone.z1.agent.w1.state"
+    },
+    {
+      "invalid_pattern": true,
+      "pattern": "a2a.zone.>.state",
+      "subject": "a2a.zone.z1.state"
+    },
+    {
+      "invalid_pattern": true,
+      "pattern": "a2a..zone",
+      "subject": "a2a..zone"
+    },
+    {
+      "invalid_pattern": true,
+      "pattern": "a2a.zo ne.z1",
+      "subject": "a2a.zo ne.z1"
+    }
+  ],
+  "vector": "subject_matching",
+  "version": 1
+}
