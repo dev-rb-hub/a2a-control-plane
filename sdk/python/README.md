@@ -16,7 +16,7 @@ This package is independent of, and not affiliated with, the Linux Foundation Ag
 | Task ledger and `GetTaskStatus` (in-memory, with recovery of an earlier run's tasks), bounded fail-closed voucher replay store | spec 04, sections 4.4, 4.7 | implemented in process |
 | Limits (message size, capability map, in-flight), self-reported health, registration timeout, reconnect backoff | spec 03, 5.2; spec 05, sections 5, 6 | implemented |
 | Drain (`Aggregator.drain`, `WorkerClient.on_drain`, drain timeout) | spec 03, section 8 | implemented in process |
-| Dev tooling | `DevCA` (Ed25519, not SPIRE), `ManualClock`, `DevCluster`, `InMemoryBus.drop_filter` for loss injection | implemented |
+| Dev tooling | `DevCA` (Ed25519 challenge keys and X.509-SVIDs via `issue_x509`, not SPIRE), `ManualClock`, `DevCluster`, `InMemoryBus.drop_filter` for loss injection | implemented |
 | A2A bridge, worker side | `bridge` (run an `a2a-sdk` agent as a worker; extra `a2a`) | implemented |
 | gRPC service definitions (`Registration`, `Admin`, `TaskSubmission`, `ZoneControl`) | `schemas/v1/services.proto` ([#2](https://github.com/dev-rb-hub/a2a-control-plane/issues/2)) | schema only; no server or client yet |
 | `recovery.replay` (durable bus), a JetStream-backed durable task ledger, CCR replication and election, Aggregator health checks, `Admin.ListWorkers` over RPC, task queueing, session resumption and overlapping SVIDs (the latter is only sketched in spec 04 section 9), metrics and audit export | spec 04, 05 | specified, not implemented |

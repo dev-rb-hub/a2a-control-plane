@@ -10,11 +10,13 @@ import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey,
     Ed25519PublicKey,
 )
 
+from a2a_control_plane import devpki
 from a2a_control_plane.aggregator import Aggregator
 from a2a_control_plane.bus import MAX_MESSAGE_BYTES, InMemoryBus
 from a2a_control_plane.heartbeat import AdaptiveHeartbeat
@@ -53,11 +55,43 @@ class DevCredential:
 class DevCA:
     def __init__(self) -> None:
         self._public_keys: dict[str, Ed25519PublicKey] = {}
+        self._root_key = Ed25519PrivateKey.generate()
+        self._roots: dict[str, x509.Certificate] = {}
 
     def issue(self, identity: SpiffeId) -> DevCredential:
         key = Ed25519PrivateKey.generate()
         self._public_keys[str(identity)] = key.public_key()
         return DevCredential(identity, key)
+
+    def _root(self, trust_domain: str) -> x509.Certificate:
+        if trust_domain not in self._roots:
+            self._roots[trust_domain] = devpki.new_root(self._root_key, trust_domain)
+        return self._roots[trust_domain]
+
+    def trust_bundle_pem(self, trust_domain: str) -> bytes:
+        """PEM trust bundle (the dev root) for ``trust_domain``."""
+        return devpki.pem_chain([self._root(trust_domain)])
+
+    def issue_x509(
+        self,
+        identity: SpiffeId,
+        now: float,
+        lifetime: float = devpki.MAX_SVID_LIFETIME_SECONDS,
+    ) -> devpki.X509Svid:
+        """Issue an X.509-SVID valid from ``now`` for ``lifetime`` seconds (at most one hour).
+
+        The leaf key is also registered for challenge verification, like ``issue``.
+        """
+        key = Ed25519PrivateKey.generate()
+        root = self._root(identity.trust_domain)
+        leaf = devpki.issue_leaf(self._root_key, root, identity, key, now, lifetime)
+        self._public_keys[str(identity)] = key.public_key()
+        return devpki.X509Svid(
+            identity,
+            devpki.pem_chain([leaf]),
+            devpki.private_key_pem(key),
+            devpki.pem_chain([root]),
+        )
 
     def public_key_for(self, identity: SpiffeId) -> Ed25519PublicKey | None:
         return self._public_keys.get(str(identity))
