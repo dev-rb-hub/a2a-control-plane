@@ -41,6 +41,6 @@ Open GitHub issues are the backlog, labeled by area (`spec`, `sdk`, `transport`,
 
 ## Known sharp edges
 
-- The roles are synchronous and driven by an explicit clock. Real transports are async; an issue tracks how to reconcile this. Do not add hidden threads or global event loops to the roles.
+- The roles are synchronous and driven by an explicit clock. Real transports are async; [RFC 0005](rfcs/0005-async-model.md) settles this: a single-owner event loop drives the roles and transports stay at the edge. Do not add hidden threads or global event loops to the roles.
 - Registration challenges are still direct method calls: the gRPC services are defined in `schemas/v1/services.proto`, but no transport exists yet. The SDK's calls mirror them.
 - `bridge.py` runs each task in its own event loop when none is running; inside a running loop it defers completion and supports cancellation.
